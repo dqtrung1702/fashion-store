@@ -1,0 +1,256 @@
+@font-face {
+  font-family: 'UVN Mua Thu';
+  src: url('/fonts/UVNMuaThu.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-400.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-500.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-600.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('/fonts/Nunito-700.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-body: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'UVN Mua Thu', Georgia, serif;
+  --page-bg: rgba(252, 246, 242, 0.68);
+  --text-main: #35483e;
+  --ink: #2f4439;
+  --ink-soft: #627367;
+  --muted: #829087;
+  --accent-text: #a7635b;
+  --accent-text-strong: #8f514a;
+  --pastel-pink: #f2d7d2;
+  --pastel-blue: #dfe9e4;
+  --pastel-lilac: #e9dfdc;
+  --sun-cream: #f4e8c7;
+  --apple: #b8d89f;
+  --sunny: #e8c772;
+  --coral: #c97968;
+  --coral-strong: #a95d51;
+  --mint-soft: #eef5e7;
+  --surface: rgba(255, 255, 255, 0.88);
+  --surface-strong: #ffffff;
+  --line-soft: rgba(166, 99, 91, 0.2);
+  --site-background-image: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&q=85');
+  --site-background-overlay: linear-gradient(135deg, rgba(242, 215, 210, 0.54) 0%, rgba(223, 233, 228, 0.64) 42%, rgba(238, 245, 231, 0.58) 74%, rgba(244, 232, 199, 0.48) 100%);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-body);
+}
+
+body {
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--text-main);
+  background: var(--site-background-overlay), var(--site-background-image);
+  background-attachment: fixed;
+  background-position: center;
+  background-size: cover;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea,
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* Theme remap for the existing Tailwind-heavy UI. */
+.text-slate-950,
+.text-slate-900,
+.text-gray-800 {
+  color: var(--ink) !important;
+}
+
+.text-slate-800,
+.text-slate-700,
+.text-gray-700 {
+  color: #51665b !important;
+}
+
+.text-slate-600,
+.text-gray-600 {
+  color: var(--ink-soft) !important;
+}
+
+.text-slate-500,
+.text-slate-400,
+.text-gray-500 {
+  color: var(--muted) !important;
+}
+
+.uppercase.text-slate-500,
+.uppercase.text-slate-600 {
+  color: var(--accent-text) !important;
+}
+
+.text-slate-300,
+.text-slate-200,
+.text-slate-100 {
+  color: rgba(255, 250, 247, 0.88) !important;
+}
+
+.uppercase.text-white\/80,
+.uppercase.text-white\/90 {
+  color: rgba(255, 250, 247, 0.9) !important;
+}
+
+.bg-slate-950,
+.bg-slate-950\/55,
+.bg-slate-700,
+.bg-gray-800,
+.bg-blue-500,
+.bg-red-500 {
+  background-color: var(--coral) !important;
+}
+
+.hover\:bg-slate-800:hover,
+.hover\:bg-blue-600:hover,
+.hover\:bg-red-600:hover {
+  background-color: var(--coral-strong) !important;
+}
+
+.bg-slate-100 {
+  background-color: var(--pastel-blue) !important;
+}
+
+.bg-slate-300,
+.disabled\:bg-slate-300:disabled {
+  background-color: #d7e7d2 !important;
+}
+
+.bg-slate-50 {
+  background-color: rgba(223, 233, 228, 0.68) !important;
+}
+
+.bg-white,
+.bg-white\/70,
+.bg-white\/80,
+.bg-white\/85,
+.bg-white\/90,
+.bg-white\/95 {
+  background-color: var(--surface) !important;
+}
+
+.border-slate-100,
+.border-slate-200,
+.border-slate-300,
+.border-white\/60,
+.border-white\/70,
+.divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--line-soft) !important;
+}
+
+.focus\:border-slate-500:focus,
+.hover\:border-slate-950:hover,
+.border-slate-950 {
+  border-color: var(--coral) !important;
+}
+
+.hover\:text-slate-950:hover,
+.focus\:text-slate-950:focus {
+  color: var(--coral-strong) !important;
+}
+
+.bg-amber-100,
+.bg-amber-50 {
+  background-color: var(--sun-cream) !important;
+}
+
+.text-amber-800,
+.text-amber-700,
+.text-amber-500 {
+  color: #9c6f1f !important;
+}
+
+.bg-emerald-50 {
+  background-color: var(--mint-soft) !important;
+}
+
+.text-emerald-800,
+.text-emerald-700 {
+  color: #4f8144 !important;
+}
+
+.bg-red-50,
+.bg-red-100 {
+  background-color: #f4ddda !important;
+}
+
+.text-red-700,
+.text-red-600 {
+  color: #a95753 !important;
+}

@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Handoff Guide - Fashion Store</title>
+  <style>
+    :root{
+      --bg:#fff7fb;
+      --panel:#ffffff;
+      --soft:#f1fbf5;
+      --soft-blue:#eef9ff;
+      --ink:#2f4438;
+      --muted:#667a70;
+      --line:#ffd1dc;
+      --accent:#d84855;
+      --accent-2:#ff7a6b;
+      --ok:#3c8f2f;
+      --warn:#b17200;
+      --code:#102018;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(135deg,#fff7fb,#eef9ff 48%,#f5ffe8);color:var(--ink);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.65}
+    .page{max-width:1180px;margin:0 auto;padding:40px 18px 72px}
+    .hero{border:1px solid var(--line);background:rgba(255,255,255,.82);border-radius:18px;padding:28px;box-shadow:0 24px 70px rgba(255,122,107,.12)}
+    .eyebrow{margin:0 0 8px;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase}
+    h1{margin:0;font-size:clamp(34px,5vw,58px);line-height:1.05}
+    h2{margin:34px 0 14px;color:var(--accent);font-size:23px;border-bottom:1px solid var(--line);padding-bottom:8px}
+    h3{margin:20px 0 10px;font-size:18px}
+    h4{margin:14px 0 8px;font-size:15px;color:#456456}
+    p{margin:0 0 12px;color:var(--muted)}
+    a{color:var(--accent);font-weight:700;text-decoration:none}
+    a:hover{text-decoration:underline}
+    .grid{display:grid;gap:16px}
+    .two{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:14px 0}
+    .note{border-left:4px solid var(--accent-2);background:#fff1b8;padding:14px 16px;border-radius:12px;color:#6a4b00}
+    .ok{color:var(--ok);font-weight:800}
+    .warn{color:var(--warn);font-weight:800}
+    .danger{color:var(--accent);font-weight:800}
+    code{background:#102018;color:#e8ffe8;border-radius:7px;padding:2px 6px;font-size:.92em}
+    pre{background:var(--code);color:#e8ffe8;border-radius:12px;padding:14px;overflow:auto;border:1px solid #284338}
+    table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:14px 0 20px}
+    th,td{border-bottom:1px solid var(--line);padding:11px 12px;text-align:left;vertical-align:top;font-size:14px}
+    th{background:var(--soft-blue);color:#4d6458;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+    tr:last-child td{border-bottom:0}
+    ul{margin:0;padding-left:20px}
+    li{margin:7px 0}
+    .toc{display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:18px}
+    .toc a{display:block;border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 12px;color:var(--ink)}
+    .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;background:#fff;padding:3px 10px;margin:2px;color:#456456;font-size:12px;font-weight:700}
+    @media(max-width:860px){.two,.three,.toc{grid-template-columns:1fr}.page{padding:26px 12px 48px}table{display:block;overflow-x:auto;white-space:nowrap}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Fashion Store Admin</p>
+      <h1>Admin Handoff Guide</h1>
+      <p style="max-width:820px;margin-top:14px">
+        Tài liệu vận hành chi tiết cho trang <code>/admin</code>: quyền truy cập, từng tab trong CMS,
+        format nhập liệu, Excel import/export, API liên quan, luồng upload ảnh MinIO, quản lý đơn hàng và các lỗi thường gặp.
+      </p>
+      <p>
+        Cập nhật theo code hiện tại tại <code>frontend/src/pages/AdminPage.jsx</code>,
+        <code>frontend/src/services/index.js</code>, <code>backend/routes/admin.py</code> và
+        <code>backend/routes/admin_content.py</code>.
+      </p>
+      <div class="toc">
+        <a href="#access">1. Truy cập & quyền</a>
+        <a href="#overview">2. Tổng quan màn hình</a>
+        <a href="#marketing">3. Marketing Monitor</a>
+        <a href="#products">4. Quản lý sản phẩm</a>
+        <a href="#collections">5. Quản lý danh mục</a>
+        <a href="#excel">6. Excel import/export</a>
+        <a href="#content">7. Quản lý nội dung</a>
+        <a href="#media">8. Kho ảnh MinIO</a>
+        <a href="#image-specs">9. Kích cỡ ảnh website</a>
+        <a href="#orders">10. Quản lý đơn hàng</a>
+        <a href="#api">11. API & dữ liệu</a>
+        <a href="#operations">12. Checklist vận hành</a>
+        <a href="#troubleshooting">13. Lỗi thường gặp</a>
+        <a href="#files">14. File liên quan</a>
+      </div>
+    </section>
+
+    <section id="access">
+      <h2>1. Truy Cập & Quyền</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th>Hạng mục</th><th>Chi tiết</th></tr></thead>
+          <tbody>
+            <tr><td>URL</td><td><code>/admin</code></td></tr>
+            <tr><td>Điều kiện</td><td>Người dùng phải đăng nhập và có <code>is_admin=true</code>.</td></tr>
+            <tr><td>Auth token</td><td>Frontend đọc token từ <code>localStorage.token</code> và gửi header <code>Authorization: Bearer ...</code>.</td></tr>
+            <tr><td>Khi token hết hạn</td><td>Axios interceptor tự logout và redirect về <code>/login?next=/admin&amp;reason=session-expired</code>.</td></tr>
+            <tr><td>Khi không phải admin</td><td>Backend trả <code>403 Admin access required</code>.</td></tr>
+            <tr><td>Backend guard</td><td><code>verify_admin()</code> trong <code>backend/routes/admin.py</code> và <code>backend/routes/admin_content.py</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="overview">
+      <h2>2. Tổng Quan Màn Hình</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Header Admin</h3>
+          <p>Mở đầu trang là tiêu đề <code>Marketing CMS và vận hành nội dung</code>, kèm vùng hiển thị lỗi/thành công.</p>
+          <p>Các lỗi có thể đến từ catalog, content, API admin, upload ảnh hoặc đơn hàng.</p>
+        </div>
+        <div class="card">
+          <h3>Stats Cards</h3>
+          <p>Các thẻ thống kê lấy từ state frontend và kho ảnh:</p>
+          <span class="pill">Marketing score</span>
+          <span class="pill">Tổng sản phẩm</span>
+          <span class="pill">Tổng danh mục</span>
+          <span class="pill">Đang public</span>
+          <span class="pill">Bản nháp</span>
+          <span class="pill">Trang nội dung</span>
+          <span class="pill">Kho ảnh</span>
+        </div>
+      </div>
+
+      <table>
+        <thead><tr><th>Tab chính</th><th>Mục đích</th><th>Dữ liệu tác động</th></tr></thead>
+        <tbody>
+          <tr><td>Marketing monitor</td><td>Theo dõi sức khỏe landing page, CTA, campaign, social proof, UGC.</td><td>Read-only từ content/product state.</td></tr>
+          <tr><td>Quản lý sản phẩm</td><td>Tạo/sửa/xóa sản phẩm, gắn nhiều danh mục, biến thể, ảnh, SEO, bản dịch EN, import/export Excel.</td><td><code>products</code>, MinIO images.</td></tr>
+          <tr><td>Quản lý danh mục</td><td>Tạo/sửa/xóa collection, SEO collection, bản dịch EN; điều khiển menu Shop, tile danh mục homepage, footer category và trang collection public.</td><td><code>catalog_collections</code>, linked products.</td></tr>
+          <tr><td>Quản lý nội dung</td><td>Sửa homepage, background website, landing bán hàng, editorial, info pages theo VI/EN.</td><td><code>site_content</code>, Redis content cache.</td></tr>
+          <tr><td>Kho ảnh MinIO</td><td>Upload, xem, copy URL, dùng ảnh cho product form, xóa ảnh chưa dùng.</td><td>MinIO bucket, prefix <code>products/</code>.</td></tr>
+          <tr><td>Quản lý đơn hàng</td><td>Xem đơn, đổi trạng thái, cập nhật timeline tracking.</td><td><code>orders</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="marketing">
+      <h2>3. Marketing Monitor</h2>
+      <div class="card">
+        <p>Tab mặc định là <code>marketing</code>. Mục này không lưu dữ liệu trực tiếp, chỉ đọc content hiện tại để cảnh báo phần còn thiếu.</p>
+        <table>
+          <thead><tr><th>Checklist</th><th>Điều kiện OK</th><th>Ý nghĩa</th></tr></thead>
+          <tbody>
+            <tr><td>Hero có thông điệp và CTA chính</td><td>Có <code>hero.title</code>, <code>hero.description</code>, <code>hero.primaryCtaTo</code>.</td><td>Hero đủ thông điệp và đường dẫn hành động.</td></tr>
+            <tr><td>Campaign banner đã nối landing page</td><td>Có <code>campaignBanner.title</code> và <code>campaignBanner.to</code>.</td><td>Campaign chính có link đi tiếp.</td></tr>
+            <tr><td>Social proof đủ để tăng niềm tin</td><td><code>reviews.length &gt;= 3</code>.</td><td>Trang chủ có đủ review để giảm nghi ngại.</td></tr>
+            <tr><td>UGC/social content có ảnh</td><td>Có ít nhất 2 post UGC có <code>image</code>.</td><td>Landing page bớt giống catalog thuần bán hàng.</td></tr>
+            <tr><td>Newsletter có lời mời đăng ký</td><td>Có <code>newsletter.title</code> và <code>newsletter.description</code>.</td><td>Thu lead cho chiến dịch.</td></tr>
+            <tr><td>Có ít nhất 3 landing editorial</td><td>Đủ 3 nội dung trong <code>contentOptionEntries.editorial</code>.</td><td>Campaign, lookbook, occasion đều có trang.</td></tr>
+            <tr><td>Nguồn sản phẩm hỗ trợ campaign</td><td>Có sản phẩm <code>isNew</code>, <code>isBestSeller</code> hoặc <code>isOnSale</code>.</td><td>Các block sản phẩm trên homepage có nguồn hiển thị.</td></tr>
+          </tbody>
+        </table>
+        <p>Nút <code>Sửa homepage</code> chuyển sang tab <code>Quản lý nội dung</code> và mở subtab <code>Trang chủ</code>.</p>
+      </div>
+    </section>
+
+    <section id="products">
+      <h2>4. Quản Lý Sản Phẩm</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Danh sách sản phẩm</h3>
+          <ul>
+            <li>Hiển thị ảnh cover hoặc ảnh gallery đầu tiên.</li>
+            <li>Hiển thị collection label, danh sách danh mục, trạng thái <code>active/draft</code>, badges, giá, tồn kho, SKU và số biến thể.</li>
+            <li>Nút <code>Sửa</code> nạp dữ liệu vào Product Form.</li>
+            <li>Nút <code>Xóa</code> gọi delete product sau xác nhận browser confirm.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Product Form</h3>
+          <ul>
+            <li>Dùng để tạo sản phẩm mới hoặc cập nhật sản phẩm đang sửa.</li>
+            <li>Khi lưu, frontend gọi store <code>upsertProduct()</code>; nếu backend remote sẵn sàng sẽ gọi API admin.</li>
+            <li>Field <code>category</code>, <code>categories</code>, <code>sizes</code>, <code>colors</code>, <code>stock</code> không nhập tay; được suy ra từ collection đã chọn và variants.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Product Fields</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Bắt buộc</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td><code>name</code></td><td>Có</td><td>Tên sản phẩm public.</td></tr>
+          <tr><td><code>slug</code></td><td>Có</td><td>Dùng trong URL/API. Backend không cho trùng slug.</td></tr>
+          <tr><td><code>sku</code></td><td>Không</td><td>Mã SKU tổng. Variant vẫn có SKU riêng.</td></tr>
+          <tr><td><code>status</code></td><td>Có</td><td><code>active</code> public, <code>draft</code> ẩn khỏi storefront.</td></tr>
+          <tr><td><code>collectionSlug</code></td><td>Có</td><td>Collection chính. Backend giữ field này để tương thích API/UI cũ.</td></tr>
+          <tr><td><code>collectionSlugs</code></td><td>Có</td><td>Danh sách collection mà sản phẩm thuộc về. Một sản phẩm có thể xuất hiện ở nhiều danh mục; tất cả slug phải tồn tại trong <code>catalog_collections</code>.</td></tr>
+          <tr><td><code>description</code></td><td>Có</td><td>Hiển thị ở trang detail và có thể dùng cho SEO/search.</td></tr>
+          <tr><td><code>price</code></td><td>Có</td><td>VNĐ, number. Product card và detail đều hiển thị giá.</td></tr>
+          <tr><td><code>compareAtPrice</code></td><td>Không</td><td>Giá gạch, dùng khi có sale.</td></tr>
+          <tr><td><code>trendingScore</code></td><td>Không</td><td>Số 0-100, hỗ trợ sort/ưu tiên marketing.</td></tr>
+          <tr><td><code>material</code>, <code>fitNotes</code></td><td>Không</td><td>Hiển thị trên màn detail.</td></tr>
+          <tr><td><code>styleTags</code></td><td>Không</td><td>Nhập phân tách bằng dấu phẩy hoặc xuống dòng.</td></tr>
+          <tr><td><code>seoTitle</code>, <code>seoDescription</code></td><td>Không</td><td>Chuẩn bị cho SEO/content detail.</td></tr>
+          <tr><td><code>translations.en.*</code></td><td>Không</td><td>Khi khách chọn EN, field có dữ liệu sẽ thay thế field gốc; field trống fallback về VI/gốc.</td></tr>
+          <tr><td><code>isNew</code>, <code>isBestSeller</code>, <code>isOnSale</code></td><td>Không</td><td>Điều khiển badge và nguồn block homepage.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Format Variants</h3>
+      <p>Field <code>Variants</code> là nguồn chính cho size, màu, SKU biến thể và tồn kho.</p>
+      <pre><code>XS | Trắng ngọc | AD-TRANG-XS | 6
+S | Trắng ngọc | AD-TRANG-S | 8
+M | Hồng phấn | AD-HONG-M | 4
+L | Hồng phấn | AD-HONG-L | 0</code></pre>
+      <ul>
+        <li>Format: <code>size | màu | sku | stock</code>.</li>
+        <li>Nếu thiếu size, frontend fallback <code>One Size</code>.</li>
+        <li>Nếu stock bằng 0, detail sẽ disable option hoặc báo hết hàng theo variant.</li>
+      </ul>
+
+      <h3>Ảnh Sản Phẩm</h3>
+      <table>
+        <thead><tr><th>Field/Action</th><th>Ý nghĩa</th></tr></thead>
+        <tbody>
+          <tr><td><code>coverImage</code></td><td>Ảnh chính của product card, detail và có thể được dùng làm hero collection.</td></tr>
+          <tr><td><code>images</code></td><td>Gallery URLs, mỗi dòng một URL. Product detail gộp <code>coverImage</code> + gallery và loại trùng. Muốn bỏ ảnh gallery cũ thì xóa dòng URL khỏi textarea hoặc bấm <code>Bỏ ảnh</code> ở preview; thao tác này chỉ gỡ khỏi form, không xóa file MinIO.</td></tr>
+          <tr><td>Upload ảnh cover</td><td>Upload một file lên MinIO, tự điền URL vào <code>coverImage</code>.</td></tr>
+          <tr><td>Upload gallery</td><td>Upload nhiều file, tự append URL vào <code>images</code>. Nếu chưa có cover, ảnh đầu tiên cũng được gán làm cover.</td></tr>
+          <tr><td>Thư viện ảnh MinIO</td><td>Có thể chọn <code>Đặt cover</code> hoặc <code>Thêm gallery</code> từ ảnh đã upload.</td></tr>
+        </tbody>
+      </table>
+      <p>Thông số ảnh chuẩn được nhúng trực tiếp trong mục <a href="#image-specs">Kích Cỡ Ảnh Website</a> bên dưới.</p>
+    </section>
+
+    <section id="collections">
+      <h2>5. Quản Lý Danh Mục</h2>
+      <div class="card">
+        <table>
+          <thead><tr><th>Field</th><th>Ghi chú</th></tr></thead>
+          <tbody>
+            <tr><td><code>title</code></td><td>Tên collection public.</td></tr>
+            <tr><td><code>slug</code></td><td>URL collection, không được trùng.</td></tr>
+            <tr><td><code>sortPriority</code></td><td>Sắp xếp danh mục; số nhỏ đứng trước.</td></tr>
+            <tr><td><code>description</code></td><td>Mô tả collection/hero.</td></tr>
+            <tr><td><code>featuredKeywords</code></td><td>Danh sách keyword phân tách bằng dấu phẩy, dùng để hỗ trợ fallback/infer catalog local.</td></tr>
+            <tr><td><code>seoHeading</code>, <code>seoBody</code></td><td>Nội dung SEO cuối trang collection.</td></tr>
+            <tr><td><code>translations.en.*</code></td><td>Bản dịch tiếng Anh cho title, description, SEO heading/body.</td></tr>
+            <tr><td><code>isActive</code></td><td>Ẩn/hiện collection ngoài storefront.</td></tr>
+          </tbody>
+        </table>
+        <p>Collection đang bật sẽ xuất hiện trong menu <code>Shop</code>, tile danh mục trên homepage, card phụ đầu trang, block theo dịp, nhóm danh mục footer và route <code>/collections/{slug}</code>. Sắp xếp theo <code>sortPriority</code>; số nhỏ đứng trước.</p>
+        <div class="note">
+          Không xóa được collection nếu còn sản phẩm đang dùng slug đó trong <code>collectionSlug</code> hoặc <code>collectionSlugs</code>.
+          Backend trả lỗi <code>Cannot delete collection with N linked products</code>.
+        </div>
+        <p>Khi đổi slug collection, backend cập nhật lại <code>collectionSlug</code>, <code>collectionSlugs</code>, <code>category</code> và <code>categories</code> cho toàn bộ product đang gắn slug cũ.</p>
+      </div>
+    </section>
+
+    <section id="excel">
+      <h2>6. Excel Import/Export</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Template Excel</h3>
+          <ul>
+            <li>Admin có nút tải template để điền thông tin sản phẩm trước khi import.</li>
+            <li>Template có sheet sản phẩm và sheet danh mục tham khảo để tránh nhập sai slug.</li>
+            <li>Ảnh có thể bỏ trống lúc import; sau đó admin bổ sung cover/gallery bằng kho MinIO.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Import hàng loạt</h3>
+          <ul>
+            <li>Frontend đọc file bằng thư viện <code>xlsx</code>, gom nhiều dòng thành nhiều sản phẩm.</li>
+            <li>Nhiều dòng cùng slug sẽ được merge để hỗ trợ nhiều biến thể cho một sản phẩm.</li>
+            <li>Danh mục nhập bằng slug collection; nhiều danh mục có thể nhập dạng danh sách phân tách bằng dấu phẩy hoặc xuống dòng.</li>
+            <li>Backend vẫn kiểm tra collection tồn tại, slug không trùng sai ngữ cảnh và dữ liệu hợp lệ trước khi lưu.</li>
+          </ul>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Chức năng</th><th>Ghi chú vận hành</th></tr></thead>
+        <tbody>
+          <tr><td>Tải template</td><td>Dùng khi admin cần nhập sản phẩm mới hàng loạt. Nên không sửa tên sheet/cột nếu không cần thiết.</td></tr>
+          <tr><td>Import sản phẩm</td><td>Có thể import nhiều sản phẩm trong một file. Nếu ảnh chưa có, để trống cột ảnh rồi bổ sung sau trong admin.</td></tr>
+          <tr><td>Export sản phẩm hiện tại</td><td>Xuất dữ liệu sản phẩm hiện có ra Excel, bỏ qua phần ảnh theo yêu cầu vận hành.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="content">
+      <h2>7. Quản Lý Nội Dung</h2>
+      <div class="card">
+        <h3>Locale VI/EN</h3>
+        <p>Subtab content có bộ chọn <code>VI</code>/<code>EN</code>. Khi chọn EN, form đang sửa sẽ đọc và lưu vào bundle tiếng Anh. Website public dùng cùng store locale để chuyển nội dung.</p>
+        <p>Các thao tác lưu content hiện luôn gọi <code>POST /api/admin/content/import</code>, kể cả khi backend trước đó chưa có content remote. Sau khi lưu, backend xóa Redis content cache để public đọc dữ liệu mới.</p>
+        <p><code>backgroundImage</code> là trường dùng chung cho cả VI/EN; đổi ảnh nền ở admin sẽ áp dụng cho toàn website public sau khi lưu.</p>
+      </div>
+
+      <h3>Content Tabs</h3>
+      <table>
+        <thead><tr><th>Subtab</th><th>Pages/Keys</th><th>Ảnh hưởng public</th></tr></thead>
+        <tbody>
+          <tr><td>Trang chủ</td><td><code>siteChrome</code>, <code>homePageContent</code></td><td>Header, announcement, footer, homepage hero, campaign, block controls, USP, occasion, reviews, newsletter, UGC.</td></tr>
+          <tr><td>Landing bán hàng</td><td><code>new-in</code>, <code>bestsellers</code>, <code>sale</code></td><td>Các trang merchandising.</td></tr>
+          <tr><td>Bài editorial</td><td><code>campaigns/ao-dai-hoi-he</code>, <code>lookbook/dong-phuc-tap-the</code>, <code>occasions/tet-hoi-xuan</code></td><td>Campaign, lookbook, occasion landing.</td></tr>
+          <tr><td>Trang thông tin</td><td><code>about</code>, <code>size-guide</code>, <code>delivery</code>, <code>returns</code>, <code>faq</code>, <code>contact</code>, <code>track-order</code></td><td>Trang hỗ trợ và nội dung vận hành.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Homepage Structured Field Formats</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Format mỗi dòng</th><th>Ví dụ</th></tr></thead>
+        <tbody>
+          <tr><td><code>Hero stats</code></td><td><code>nhãn | giá trị | mô tả</code></td><td><code>Khách hàng | 1.200+ | Đã chọn áo dài</code></td></tr>
+          <tr><td><code>Homepage blocks</code></td><td><code>key | eyebrow | title | CTA label | CTA link | on/off</code></td><td><code>newIn | Mới về | Những mẫu vừa lên kệ | Xem toàn bộ | /new-in | on</code></td></tr>
+          <tr><td><code>USP bar</code></td><td><code>tiêu đề | mô tả</code></td><td><code>Đổi trả 14 ngày | Trả hàng gọn nếu phom chưa đúng</code></td></tr>
+          <tr><td><code>Reviews</code></td><td><code>quote | tên | meta | rating</code></td><td><code>Áo lên ảnh rất đẹp | Minh Anh | Hà Nội | 5</code></td></tr>
+          <tr><td><code>UGC block</code></td><td><code>nền tảng | handle | caption | ảnh</code></td><td><code>Instagram | @nangtho | Tà áo trong nắng | https://...</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Homepage Block Keys</h3>
+      <p>Các key hợp lệ trong <code>Homepage blocks</code>:</p>
+      <span class="pill">campaigns</span>
+      <span class="pill">newIn</span>
+      <span class="pill">bestsellers</span>
+      <span class="pill">categories</span>
+      <span class="pill">occasions</span>
+      <span class="pill">reviews</span>
+      <span class="pill">ugc</span>
+      <p style="margin-top:10px">Các giá trị tắt được nhận diện: <code>off</code>, <code>false</code>, <code>0</code>, <code>no</code>, <code>hide</code>, <code>hidden</code>, <code>an</code>, <code>ẩn</code>, <code>tat</code>, <code>tắt</code>. Các giá trị khác được xem là bật.</p>
+
+      <h3>Info Pages Structured Formats</h3>
+      <table>
+        <thead><tr><th>Field</th><th>Format</th></tr></thead>
+        <tbody>
+          <tr><td><code>Sections</code></td><td><code>tiêu đề | nội dung</code></td></tr>
+          <tr><td><code>Table headers</code></td><td>Danh sách ngăn cách bằng dấu phẩy.</td></tr>
+          <tr><td><code>Table rows</code></td><td><code>cột 1 | cột 2 | cột 3...</code>, số cột nên khớp header.</td></tr>
+          <tr><td><code>FAQs</code></td><td><code>câu hỏi | trả lời</code></td></tr>
+          <tr><td><code>Cards</code></td><td><code>title | detail | note</code></td></tr>
+          <tr><td><code>Steps</code></td><td>Mỗi dòng một bước.</td></tr>
+          <tr><td><code>Contact map</code></td><td>Chỉ hiện khi chọn page <code>contact</code>; có map title, address, coordinates, map URL, embed URL.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="media">
+      <h2>8. Kho Ảnh MinIO</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Upload</h3>
+          <ul>
+            <li>Tab <code>Kho ảnh MinIO</code> upload nhiều file cùng lúc.</li>
+            <li>Product Form có upload cover và gallery riêng.</li>
+            <li>Backend lưu object vào prefix <code>products/</code> với tên UUID và extension gốc.</li>
+            <li>Response trả về <code>object_name</code>, <code>url</code>, <code>size</code>, <code>content_type</code>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Giới hạn</h3>
+          <ul>
+            <li>Allowed types: <code>image/jpeg</code>, <code>image/png</code>, <code>image/webp</code>, <code>image/gif</code>.</li>
+            <li>Max size: <code>10 MB</code> mỗi file.</li>
+            <li>List API giới hạn query <code>limit</code> trong khoảng 1-500; frontend đang dùng 200.</li>
+            <li>Không xóa được ảnh nếu <code>product_usage_count &gt; 0</code>.</li>
+          </ul>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Action</th><th>Kết quả</th></tr></thead>
+        <tbody>
+          <tr><td><code>Đặt cover</code></td><td>Chuyển sang tab Products, mở form, đặt URL ảnh vào <code>coverImage</code>.</td></tr>
+          <tr><td><code>Thêm gallery</code></td><td>Chuyển sang tab Products, append URL vào <code>images</code>.</td></tr>
+          <tr><td><code>Copy URL</code></td><td>Copy URL public để dán vào UGC, occasion, background hoặc text field khác.</td></tr>
+          <tr><td><code>Xóa</code></td><td>Xóa object MinIO nếu không có sản phẩm nào đang dùng ảnh.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="image-specs">
+      <h2>9. Kích Cỡ Ảnh Website</h2>
+      <div class="card">
+        <p>
+          Các khung ảnh public hiện dùng <code>object-cover</code> hoặc <code>background-size: cover</code>,
+          nên ảnh sai tỉ lệ vẫn hiển thị được nhưng sẽ bị crop từ giữa. Khi crop ảnh, luôn giữ mặt người,
+          sản phẩm, tay áo, tà áo và chi tiết quan trọng trong vùng trung tâm 70-80% khung.
+        </p>
+        <p>
+          Backend nhận <code>image/jpeg</code>, <code>image/png</code>, <code>image/webp</code>, <code>image/gif</code>;
+          giới hạn upload là <code>10 MB/file</code>. Nên dùng <code>WebP</code> hoặc <code>JPG</code> cho ảnh thật.
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Vị trí sử dụng</th>
+            <th>Tỉ lệ khung</th>
+            <th>Kích thước nên upload</th>
+            <th>Tối thiểu</th>
+            <th>Ghi chú crop/nội dung</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Product cover trên listing/card</td>
+            <td><code>3:4</code></td>
+            <td><code>1500 x 2000 px</code></td>
+            <td><code>900 x 1200 px</code></td>
+            <td>Ảnh chính sản phẩm. Nên chụp dọc full body hoặc 3/4 body, nền sạch, sản phẩm ở giữa.</td>
+          </tr>
+          <tr>
+            <td>Product detail ảnh lớn</td>
+            <td><code>4:5</code></td>
+            <td><code>1600 x 2000 px</code></td>
+            <td><code>1200 x 1500 px</code></td>
+            <td>Nếu dùng chung cover 3:4 thì trang detail sẽ crop nhẹ. Không đặt đầu hoặc tà áo sát mép.</td>
+          </tr>
+          <tr>
+            <td>Product gallery/detail phụ</td>
+            <td><code>1:1</code></td>
+            <td><code>1600 x 1600 px</code></td>
+            <td><code>1000 x 1000 px</code></td>
+            <td>Dùng cho chất liệu, cổ áo, tay áo, đường may. Chủ thể cần ở giữa khung vuông.</td>
+          </tr>
+          <tr>
+            <td>Cart/order thumbnail</td>
+            <td><code>4:5</code></td>
+            <td><code>1200 x 1500 px</code></td>
+            <td><code>800 x 1000 px</code></td>
+            <td>Dùng lại ảnh sản phẩm, không cần upload riêng nếu cover đã chuẩn.</td>
+          </tr>
+          <tr>
+            <td>Homepage main hero</td>
+            <td>Responsive cover, desktop gần <code>5:4</code></td>
+            <td><code>2400 x 1600 px</code> hoặc <code>2400 x 1800 px</code></td>
+            <td><code>1800 x 1200 px</code></td>
+            <td>Ảnh lifestyle rộng, chừa vùng dưới/trái cho chữ overlay. Chủ thể nên ở giữa hoặc hơi phải.</td>
+          </tr>
+          <tr>
+            <td>Collection/merchandising/editorial hero</td>
+            <td>Ngang rộng, responsive cover</td>
+            <td><code>2400 x 1200 px</code> hoặc <code>2400 x 1350 px</code></td>
+            <td><code>1800 x 900 px</code></td>
+            <td>Mobile crop mạnh, nên dùng ảnh có bối cảnh rộng. Không đặt chữ trực tiếp trong ảnh.</td>
+          </tr>
+          <tr>
+            <td>Homepage campaign card nhỏ phía trên</td>
+            <td>Strip ngang</td>
+            <td><code>1600 x 800 px</code></td>
+            <td><code>1200 x 600 px</code></td>
+            <td>Khung thấp, chữ overlay ở dưới. Tránh mặt người sát đáy vì sẽ bị overlay che.</td>
+          </tr>
+          <tr>
+            <td>Homepage campaign banner lớn</td>
+            <td>Gần <code>16:9</code> tới <code>7:4</code></td>
+            <td><code>2000 x 1150 px</code> hoặc <code>1920 x 1080 px</code></td>
+            <td><code>1400 x 800 px</code></td>
+            <td>Ảnh campaign có mood rõ. Chừa vùng đáy ít chi tiết cho title và CTA.</td>
+          </tr>
+          <tr>
+            <td>Homepage campaign card phụ</td>
+            <td>Ngang rộng</td>
+            <td><code>1600 x 900 px</code></td>
+            <td><code>1200 x 700 px</code></td>
+            <td>Dùng ảnh lookbook/occasion ngang hoặc ảnh dọc có nền rộng. Subject nên ở trung tâm.</td>
+          </tr>
+          <tr>
+            <td>Homepage category/collection tile</td>
+            <td>Gần <code>4:5</code></td>
+            <td><code>1200 x 1500 px</code></td>
+            <td><code>900 x 1125 px</code></td>
+            <td>Ảnh đại diện nhóm sản phẩm. Nếu lấy từ product cover, chọn ảnh có phom và màu đại diện rõ.</td>
+          </tr>
+          <tr>
+            <td>Homepage occasion tile</td>
+            <td><code>4:5</code></td>
+            <td><code>1200 x 1500 px</code> hoặc <code>1600 x 2000 px</code></td>
+            <td><code>900 x 1125 px</code></td>
+            <td>Ảnh lifestyle theo dịp mặc. Overlay chữ ở đáy, tránh chi tiết quan trọng ở dưới cùng.</td>
+          </tr>
+          <tr>
+            <td>UGC/social tile</td>
+            <td><code>4:5</code></td>
+            <td><code>1080 x 1350 px</code></td>
+            <td><code>900 x 1125 px</code></td>
+            <td>Chuẩn Instagram portrait. Ảnh nên tự nhiên, ít chữ, cùng tông pastel/coral.</td>
+          </tr>
+          <tr>
+            <td>Site background image</td>
+            <td>Full viewport cover</td>
+            <td><code>2400 x 1600 px</code> hoặc <code>2560 x 1440 px</code></td>
+            <td><code>1800 x 1200 px</code></td>
+            <td>Ảnh nền nhẹ, ít chi tiết, không cạnh tranh với sản phẩm. Ưu tiên thiên nhiên/texture mềm.</td>
+          </tr>
+          <tr>
+            <td>Admin image library preview</td>
+            <td><code>1:1</code> preview</td>
+            <td>Không cần crop riêng</td>
+            <td>Không cần crop riêng</td>
+            <td>Chỉ là preview trong admin. Ảnh gốc vẫn nên theo vị trí sử dụng thực tế ở trên.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Quy Tắc Xuất File</h3>
+      <table>
+        <thead><tr><th>Loại ảnh</th><th>Format nên dùng</th><th>Dung lượng nên giữ</th><th>Ghi chú</th></tr></thead>
+        <tbody>
+          <tr><td>Ảnh sản phẩm/catalog</td><td><code>WebP</code> hoặc <code>JPG quality 80-85</code></td><td><code>300 KB - 1.5 MB</code></td><td>Ưu tiên màu da thật, không sharpen quá tay.</td></tr>
+          <tr><td>Hero/campaign lớn</td><td><code>WebP</code> hoặc <code>JPG quality 80-85</code></td><td><code>800 KB - 2.5 MB</code></td><td>Có thể lớn hơn ảnh sản phẩm, nhưng nên dưới 3 MB.</td></tr>
+          <tr><td>UGC/social</td><td><code>WebP</code> hoặc <code>JPG quality 80</code></td><td><code>250 KB - 1 MB</code></td><td>Giữ cảm giác tự nhiên, không cần quá sắc như ảnh catalog.</td></tr>
+          <tr><td>Ảnh nền trong suốt</td><td><code>PNG</code></td><td>Dưới <code>2 MB</code></td><td>Chỉ dùng khi thật sự cần alpha.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Gợi Ý Đặt Tên File</h3>
+      <pre><code>product-ao-dai-trang-cover-1500x2000.webp
+product-ao-dai-trang-detail-co-1600x1600.webp
+homepage-hero-ao-dai-hoi-he-2400x1600.webp
+campaign-tet-hoi-xuan-banner-2000x1150.webp
+ugc-instagram-ao-dai-hoi-an-1080x1350.webp</code></pre>
+      <p>Thông tin này là nguồn chính trong admin guide; không còn cần file Markdown riêng cho image specs.</p>
+    </section>
+
+    <section id="orders">
+      <h2>10. Quản Lý Đơn Hàng</h2>
+      <div class="card">
+        <p>Tab Orders chỉ tải danh sách khi active. Nút <code>Tải lại</code> gọi lại API để cập nhật danh sách.</p>
+        <table>
+          <thead><tr><th>Trạng thái</th><th>Nhãn admin</th><th>Ghi chú</th></tr></thead>
+          <tbody>
+            <tr><td><code>pending</code></td><td>Chờ xác nhận thanh toán</td><td>Đơn mới/chưa xác nhận.</td></tr>
+            <tr><td><code>confirmed</code></td><td>Đã xác nhận thanh toán</td><td>Đã xác nhận thanh toán hoặc giữ hàng.</td></tr>
+            <tr><td><code>processing</code></td><td>Đang chuẩn bị hàng</td><td>Đang đóng gói/xử lý.</td></tr>
+            <tr><td><code>shipped</code></td><td>Đang giao hàng</td><td>Đã chuyển cho đơn vị vận chuyển.</td></tr>
+            <tr><td><code>delivered</code></td><td>Đã giao thành công</td><td>Hoàn tất.</td></tr>
+            <tr><td><code>cancelled</code></td><td>Đã hủy</td><td>Đơn bị hủy.</td></tr>
+          </tbody>
+        </table>
+        <p>Khi admin lưu trạng thái, backend cập nhật <code>status</code>, <code>trackingSteps</code> và <code>updated_at</code>. Trang theo dõi đơn của khách đọc timeline mới ngay sau đó.</p>
+      </div>
+    </section>
+
+    <section id="api">
+      <h2>11. API & Dữ Liệu</h2>
+      <h3>Admin API</h3>
+      <table>
+        <thead><tr><th>Endpoint</th><th>Mục đích</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /api/admin/products</code></td><td>Danh sách sản phẩm admin.</td></tr>
+          <tr><td><code>POST /api/admin/products</code></td><td>Tạo sản phẩm.</td></tr>
+          <tr><td><code>PUT /api/admin/products/{idOrSlug}</code></td><td>Cập nhật sản phẩm.</td></tr>
+          <tr><td><code>DELETE /api/admin/products/{idOrSlug}</code></td><td>Xóa sản phẩm.</td></tr>
+          <tr><td><code>GET /api/admin/collections</code></td><td>Danh sách collection admin.</td></tr>
+          <tr><td><code>POST /api/admin/collections</code></td><td>Tạo collection.</td></tr>
+          <tr><td><code>PUT /api/admin/collections/{slug}</code></td><td>Cập nhật collection.</td></tr>
+          <tr><td><code>DELETE /api/admin/collections/{slug}</code></td><td>Xóa collection nếu không còn linked product.</td></tr>
+          <tr><td><code>POST /api/admin/catalog/import</code></td><td>Import catalog gồm collections/products, dùng cho seed hoặc import hàng loạt sau khi frontend parse Excel.</td></tr>
+          <tr><td><code>GET /api/admin/orders</code></td><td>Danh sách đơn hàng.</td></tr>
+          <tr><td><code>PATCH /api/admin/orders/{idOrOrderNumber}/status</code></td><td>Cập nhật trạng thái đơn.</td></tr>
+          <tr><td><code>GET /api/admin/uploads/products?limit=200</code></td><td>Danh sách ảnh MinIO kèm usage count.</td></tr>
+          <tr><td><code>POST /api/admin/uploads/products</code></td><td>Upload ảnh bằng multipart form field <code>file</code>.</td></tr>
+          <tr><td><code>DELETE /api/admin/uploads/products?object_name=...</code></td><td>Xóa ảnh chưa dùng.</td></tr>
+          <tr><td><code>GET /api/admin/content/</code></td><td>Lấy content bundle admin.</td></tr>
+          <tr><td><code>POST /api/admin/content/import</code></td><td>Upsert content bundle.</td></tr>
+          <tr><td><code>GET /api/admin/stats</code></td><td>Stats backend tổng quát; hiện frontend admin chủ yếu tự tính stats từ store.</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Collections/Tables Chính</h3>
+      <table>
+        <thead><tr><th>Dữ liệu</th><th>Nội dung</th></tr></thead>
+        <tbody>
+          <tr><td><code>products</code></td><td>Sản phẩm, <code>collectionSlug</code>/<code>collectionSlugs</code>, variants, ảnh, flags, bản dịch EN, SEO.</td></tr>
+          <tr><td><code>catalog_collections</code></td><td>Danh mục storefront, SEO, bản dịch EN, sortPriority, isActive.</td></tr>
+          <tr><td><code>site_content</code></td><td>Site chrome, homepage content, merchandising pages, editorial pages, info pages, locales VI/EN.</td></tr>
+          <tr><td><code>orders</code></td><td>Đơn hàng, items, shipping/payment, status, trackingSteps.</td></tr>
+          <tr><td><code>users</code></td><td>Xác thực admin qua <code>is_admin</code>.</td></tr>
+          <tr><td>MinIO bucket</td><td>Ảnh public, hiện dùng prefix <code>products/</code>.</td></tr>
+          <tr><td>Redis cache</td><td>Cache public catalog/content. Admin mutation tự invalidation qua <code>cache.py</code>.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="operations">
+      <h2>12. Checklist Vận Hành</h2>
+      <div class="grid two">
+        <div class="card">
+          <h3>Thêm sản phẩm mới</h3>
+          <ol>
+            <li>Upload ảnh cover/gallery vào Product Form hoặc Kho ảnh MinIO.</li>
+            <li>Điền name, slug, một hoặc nhiều collection, description, price.</li>
+            <li>Điền variants theo format <code>size | màu | sku | stock</code>.</li>
+            <li>Điền material, fit notes, SEO, bản dịch EN nếu có.</li>
+            <li>Bật/tắt badges <code>Mới</code>, <code>Bán chạy</code>, <code>Giảm giá</code>.</li>
+            <li>Lưu, sau đó kiểm tra listing và detail.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Chuẩn bị campaign homepage</h3>
+          <ol>
+            <li>Vào Content &gt; Trang chủ.</li>
+            <li>Kiểm tra hero title/description/CTA.</li>
+            <li>Cập nhật campaign banner title/link/CTA.</li>
+            <li>Bật các block cần thiết trong <code>Homepage blocks</code>.</li>
+            <li>Cập nhật review, occasion, UGC có ảnh.</li>
+            <li>Quay lại Marketing Monitor để kiểm tra score.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Cập nhật tiếng Anh</h3>
+          <ol>
+            <li>Trong Content, chuyển locale sang <code>EN</code> trước khi sửa text site/home/page.</li>
+            <li>Trong Product Form, điền nhóm <code>Bản dịch tiếng Anh</code>.</li>
+            <li>Trong Collection Form, điền English collection fields.</li>
+            <li>Kiểm tra public bằng nút chuyển cờ EN/VI.</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>Xử lý đơn hàng</h3>
+          <ol>
+            <li>Vào Orders, bấm <code>Tải lại</code>.</li>
+            <li>Chọn đơn cần xử lý.</li>
+            <li>Kiểm tra email, phone, địa chỉ, payment method, items.</li>
+            <li>Chọn trạng thái mới và bấm <code>Lưu trạng thái đơn</code>.</li>
+            <li>Kiểm tra timeline nếu cần.</li>
+          </ol>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Import sản phẩm bằng Excel</h3>
+        <ol>
+          <li>Tải template từ admin.</li>
+          <li>Điền các thông tin sản phẩm, variant và danh mục bằng slug collection.</li>
+          <li>Có thể để trống ảnh nếu chưa chuẩn bị file ảnh.</li>
+          <li>Import file, kiểm tra thông báo lỗi từng dòng nếu có.</li>
+          <li>Vào Product Form bổ sung cover/gallery từ kho MinIO nếu cần.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="troubleshooting">
+      <h2>13. Lỗi Thường Gặp</h2>
+      <table>
+        <thead><tr><th>Hiện tượng</th><th>Nguyên nhân thường gặp</th><th>Cách xử lý</th></tr></thead>
+        <tbody>
+          <tr><td>Không vào được admin</td><td>Chưa login, token hết hạn, hoặc user không có <code>is_admin</code>.</td><td>Login lại. Kiểm tra user trong DB có <code>is_admin=true</code>.</td></tr>
+          <tr><td>Lưu product báo collection not found</td><td>Một trong các slug ở <code>collectionSlug</code>/<code>collectionSlugs</code> không tồn tại.</td><td>Tạo collection trước hoặc chọn collection hợp lệ trong dropdown/Excel.</td></tr>
+          <tr><td>Slug sản phẩm/danh mục bị trùng</td><td>Backend kiểm tra unique slug.</td><td>Đổi slug, dùng chữ thường không dấu, gạch ngang.</td></tr>
+          <tr><td>Không xóa được collection</td><td>Còn sản phẩm gắn collection đó.</td><td>Chuyển/xóa sản phẩm trước, rồi xóa collection.</td></tr>
+          <tr><td>Upload ảnh lỗi unsupported type</td><td>File không thuộc JPG/PNG/WebP/GIF hoặc content type sai.</td><td>Xuất lại ảnh sang JPG/WebP.</td></tr>
+          <tr><td>Upload ảnh lỗi vượt 10 MB</td><td>File quá lớn.</td><td>Nén ảnh, ưu tiên WebP/JPG quality 80-85.</td></tr>
+          <tr><td>Không xóa được ảnh</td><td>Ảnh đang được product dùng.</td><td>Gỡ URL khỏi cover/gallery của product trước.</td></tr>
+          <tr><td>Content lưu nhưng public không đổi</td><td>Trình duyệt còn tab/cache cũ hoặc public đang ở locale khác. Backend hiện đã xóa Redis content cache sau khi lưu.</td><td>Hard refresh, kiểm tra nút VI/EN, kiểm tra document <code>site_content</code> backend.</td></tr>
+          <tr><td>Background lưu nhưng không đổi</td><td>Ảnh chưa được lưu lại sau bản sửa persist backend, hoặc browser còn cache giao diện cũ.</td><td>Lưu lại Home &amp; Site Text một lần, hard refresh public, kiểm tra <code>siteChrome.backgroundImage</code>.</td></tr>
+          <tr><td>Import Excel lỗi thiếu thư viện</td><td>Container/frontend chưa cài package <code>xlsx</code> hoặc node_modules cũ.</td><td>Chạy lại <code>npm ci --include=optional</code> hoặc rebuild/restart frontend container.</td></tr>
+          <tr><td>Homepage block không tắt</td><td>Giá trị enabled không nằm trong danh sách off.</td><td>Dùng <code>off</code> hoặc <code>false</code> ở cột cuối của <code>Homepage blocks</code>.</td></tr>
+          <tr><td>Order status không lưu</td><td>Chưa chọn order, token hết hạn, hoặc API lỗi.</td><td>Reload orders, login lại, kiểm tra backend log.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="files">
+      <h2>14. File Liên Quan</h2>
+      <table>
+        <thead><tr><th>File</th><th>Vai trò</th></tr></thead>
+        <tbody>
+          <tr><td><code>frontend/src/pages/AdminPage.jsx</code></td><td>Toàn bộ UI, tabs, form parsing, Excel import/export, upload handlers, order handlers.</td></tr>
+          <tr><td><code>frontend/src/services/index.js</code></td><td><code>adminService</code>, endpoint frontend gọi.</td></tr>
+          <tr><td><code>frontend/src/services/api.js</code></td><td>Axios base URL, auth header, 401 redirect.</td></tr>
+          <tr><td><code>frontend/src/store/catalogStore.js</code></td><td>Load/upsert/delete products và collections, local fallback.</td></tr>
+          <tr><td><code>frontend/src/store/contentStore.js</code></td><td>Load/update content bundle, locale VI/EN, local fallback.</td></tr>
+          <tr><td><code>backend/routes/admin.py</code></td><td>Admin product, collection, order, upload, stats APIs.</td></tr>
+          <tr><td><code>backend/routes/admin_content.py</code></td><td>Admin content get/import APIs.</td></tr>
+          <tr><td><code>backend/routes/content.py</code></td><td>Public content API.</td></tr>
+          <tr><td><code>backend/storage.py</code></td><td>MinIO upload/list/delete helpers và URL public.</td></tr>
+          <tr><td><code>backend/cache.py</code></td><td>Redis cache helpers và invalidation cho catalog/content.</td></tr>
+          <tr><td><code>backend/redis_client.py</code></td><td>Kết nối Redis fail-open.</td></tr>
+          <tr><td><code>docker-compose.prod.yml</code>, <code>nginx/default.conf</code></td><td>Cấu hình production với Nginx, static frontend, proxy API và MinIO assets.</td></tr>
+          <tr><td><code>docs/technical-handoff.html</code></td><td>Handoff tổng quan toàn hệ thống.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

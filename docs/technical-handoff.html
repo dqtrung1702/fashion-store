@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion Store - Bàn giao kỹ thuật</title>
+<style>
+  :root{--bg:#080f1d;--card:#111827;--soft:#172235;--line:#26364f;--text:#e5edf7;--muted:#91a0b8;--blue:#38bdf8;--green:#34d399;--amber:#fbbf24;--red:#fb7185}
+  *{box-sizing:border-box}body{margin:0;padding:40px 22px 64px;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.6}.page{max-width:1160px;margin:0 auto}.eyebrow{color:var(--blue);text-transform:uppercase;letter-spacing:.22em;font-size:12px;font-weight:800}h1{font-size:clamp(32px,5vw,56px);margin:.25rem 0 1rem;line-height:1.05}h2{margin:34px 0 14px;color:var(--blue);font-size:22px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}p{color:var(--muted);margin:0 0 12px}ul{margin:0;padding-left:18px}li{margin:6px 0}code,pre{background:#0f172a;border:1px solid var(--line);border-radius:8px;color:#dff7ff}code{padding:2px 6px}pre{padding:14px;overflow:auto}table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:16px}th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top;font-size:14px}th{background:var(--soft);color:var(--muted);text-transform:uppercase;font-size:12px;letter-spacing:.08em}tr:last-child td{border-bottom:0}.note{border-left:4px solid var(--amber);background:rgba(251,191,36,.08);padding:14px 16px;border-radius:12px;color:#ffe8a3;margin:14px 0}.risk{border-left-color:var(--red);background:rgba(251,113,133,.08);color:#ffd5de}@media(max-width:860px){.grid{grid-template-columns:1fr}body{padding:28px 14px 48px}}
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="eyebrow">Bàn giao kỹ thuật</div>
+    <h1>Fashion Store</h1>
+    <p>Tài liệu dành cho lập trình viên tiếp quản dự án. Nội dung mô tả stack, module chính, API, vận hành local và các điểm còn thiếu.</p>
+  </header>
+
+  <h2>1. Công nghệ sử dụng</h2>
+  <div class="grid">
+    <section class="card"><h3>Giao diện web</h3><ul><li>React 18</li><li>Vite build/preview</li><li>React Router</li><li>Zustand</li><li>Axios</li><li>Tailwind CSS</li><li><code>xlsx</code> cho import/export Excel</li></ul></section>
+    <section class="card"><h3>Dịch vụ API</h3><ul><li>FastAPI</li><li>PyMongo</li><li>Pydantic v2</li><li>python-jose JWT</li><li>passlib/bcrypt</li><li>MinIO SDK</li><li>Redis client cho cache mềm</li></ul></section>
+    <section class="card"><h3>Hạ tầng</h3><ul><li>Docker Compose</li><li>MongoDB 6.0</li><li>MinIO</li><li>Redis 7</li><li>Frontend local chạy production preview để tránh Vite dev client/CSP <code>unsafe-eval</code></li><li>Production có Nginx reverse proxy/static server</li></ul></section>
+    <section class="card"><h3>Tài liệu</h3><ul><li><code>BA handoff.html</code></li><li><code>architech.html</code></li><li><code>technical-handoff.html</code></li><li><code>data-model.html</code></li></ul></section>
+  </div>
+
+  <h2>2. Cách chạy local</h2>
+  <pre>cd /home/fashion-store
+cp backend/.env.example backend/.env
+./start.sh
+
+Trang bán hàng:  http://localhost:5173
+API dịch vụ:     http://localhost:8000
+Swagger:         http://localhost:8000/docs
+MinIO Console:   http://localhost:9001</pre>
+  <div class="note">Mặc định <code>./start.sh</code> chạy bằng image Docker local với <code>docker compose up -d --no-build</code>, nên có thể chạy offline sau khi image đã được pull/build một lần. Không dùng <code>--build</code> khi đang mất mạng vì Docker sẽ kiểm tra metadata của base image trên Docker Hub.</div>
+  <div class="card">
+    <h3>Frontend local hiện tại</h3>
+    <ul>
+      <li>Compose dev hiện chạy <code>npm ci --include=optional &amp;&amp; npm run build &amp;&amp; npm run preview -- --host 0.0.0.0</code>.</li>
+      <li>Cách này phục vụ bundle production ở cổng <code>5173</code>, không inject <code>/@vite/client</code> hoặc React Refresh, nên không cần <code>unsafe-eval</code> trong CSP.</li>
+      <li>Khi sửa source frontend, cần rebuild/restart frontend container để thấy thay đổi. Dữ liệu admin/content/product vẫn cập nhật động qua API.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Deploy frontend lên MinIO legacy/tuỳ chọn</h3>
+    <ul>
+      <li>Chạy <code>./scripts/deploy_frontend_to_minio.sh</code> để build Vite với base path theo bucket và upload <code>frontend/dist</code> lên MinIO.</li>
+      <li>Bucket mặc định: <code>fashion-store-frontend</code>.</li>
+      <li>URL local sau deploy: <code>http://localhost:9000/fashion-store-frontend/index.html</code>.</li>
+      <li>Có thể đổi bucket bằng <code>FRONTEND_BUCKET=my-frontend ./scripts/deploy_frontend_to_minio.sh</code>.</li>
+      <li>MinIO serve được static file, nhưng refresh trực tiếp các route SPA như <code>/collections/...</code> vẫn cần reverse proxy fallback về <code>index.html</code>.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Chạy Docker offline</h3>
+    <ul>
+      <li>Build/pull lần đầu khi có mạng: <code>./start.sh --build</code>.</li>
+      <li>Chạy hằng ngày hoặc khi offline: <code>./start.sh</code>.</li>
+      <li>Image local cần có: <code>mongo:6.0</code>, <code>minio/minio:latest</code>, <code>redis:7-alpine</code>, <code>fashion-store-backend:latest</code>, <code>fashion-store-frontend:latest</code>.</li>
+      <li>Đóng gói image để chuyển máy: <code>docker save mongo:6.0 minio/minio:latest redis:7-alpine fashion-store-backend:latest fashion-store-frontend:latest -o fashion-store-images.tar</code>.</li>
+      <li>Nạp image trên máy offline: <code>docker load -i fashion-store-images.tar</code>.</li>
+    </ul>
+  </div>
+  <div class="note">Tài khoản admin local mặc định: <code>admin</code> / <code>Admin123!</code>. Khi <code>ADMIN_SEED_ENABLED=true</code>, dịch vụ API đảm bảo tài khoản này tồn tại lúc khởi động.</div>
+
+  <h2>2.1. Cấu hình production Nginx</h2>
+  <div class="card">
+    <p>Production có bộ file riêng để chạy Nginx làm entrypoint duy nhất:</p>
+    <pre>cp .env.production.example .env.production
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build</pre>
+    <ul>
+      <li><code>nginx/Dockerfile</code> build frontend rồi copy <code>dist</code> vào image <code>nginx:1.27-alpine</code>.</li>
+      <li><code>nginx/default.conf</code> serve SPA, proxy <code>/api/</code> sang backend và proxy <code>/fashion-store-assets/</code> sang MinIO.</li>
+      <li><code>docker-compose.prod.yml</code> chỉ public Nginx ra <code>HTTP_PORT</code>; MongoDB, Redis, MinIO và backend nằm trong Docker network.</li>
+      <li><code>.env.production.example</code> là mẫu env cần đổi secret/password/domain trước khi dùng.</li>
+      <li>CORS production đọc từ <code>CORS_ORIGINS</code>. URL ảnh public đọc từ <code>MINIO_PUBLIC_ENDPOINT</code> và <code>MINIO_PUBLIC_SECURE</code>.</li>
+    </ul>
+  </div>
+
+  <h2>3. Module dịch vụ API</h2>
+  <table>
+    <thead><tr><th>File</th><th>Trách nhiệm</th></tr></thead>
+    <tbody>
+      <tr><td><code>main.py</code></td><td>Tạo FastAPI app, CORS, vòng đời app, đăng ký router.</td></tr>
+      <tr><td><code>database.py</code></td><td>Kết nối MongoDB, tạo index, seed admin, đảm bảo bucket MinIO.</td></tr>
+      <tr><td><code>models.py</code></td><td>Pydantic schema cho user, product, collection, content, cart, wishlist, order, media.</td></tr>
+      <tr><td><code>catalog.py</code></td><td>Serialize product/collection và tính tồn kho, size, màu từ biến thể.</td></tr>
+      <tr><td><code>content.py</code></td><td>Build và serialize gói nội dung CMS.</td></tr>
+      <tr><td><code>order_flow.py</code></td><td>Serialize order và tạo dòng thời gian theo trạng thái đơn.</td></tr>
+      <tr><td><code>security.py</code></td><td>Hash mật khẩu, tạo JWT, kiểm tra token bắt buộc hoặc tùy chọn.</td></tr>
+      <tr><td><code>storage.py</code></td><td>MinIO client, bucket policy, upload/list/delete ảnh sản phẩm.</td></tr>
+      <tr><td><code>redis_client.py</code></td><td>Kết nối Redis fail-open, tự bỏ qua cache nếu Redis không sẵn sàng.</td></tr>
+      <tr><td><code>cache.py</code></td><td>Helper JSON cache, key builder, TTL và invalidation cho catalog/content.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Module frontend</h2>
+  <table>
+    <thead><tr><th>Đường dẫn</th><th>Trách nhiệm</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/App.jsx</code></td><td>Khai báo route và bảo vệ route admin.</td></tr>
+      <tr><td><code>src/services/api.js</code></td><td>Axios client, gắn token, tự đăng xuất khi API trả 401.</td></tr>
+      <tr><td><code>src/services/index.js</code></td><td>Các service gọi API.</td></tr>
+      <tr><td><code>src/store/catalogStore.js</code></td><td>Đọc/lưu sản phẩm và danh mục, hỗ trợ dữ liệu dự phòng local khi API trống hoặc lỗi.</td></tr>
+      <tr><td><code>src/store/contentStore.js</code></td><td>Đọc/lưu nội dung CMS, hỗ trợ dữ liệu dự phòng local và chọn nội dung theo locale <code>vi</code>/<code>en</code>.</td></tr>
+      <tr><td><code>src/store/languageStore.js</code></td><td>Lưu ngôn ngữ đang chọn vào localStorage và đồng bộ nút chuyển VI/EN trên giao diện public.</td></tr>
+      <tr><td><code>src/store/cartStore.js</code></td><td>Giỏ hàng local cho khách chưa đăng nhập và giỏ hàng API cho người dùng đăng nhập.</td></tr>
+      <tr><td><code>src/store/wishlistStore.js</code></td><td>Yêu thích local cho khách chưa đăng nhập và dữ liệu API cho người dùng đăng nhập.</td></tr>
+      <tr><td><code>src/pages/HomePage.jsx</code></td><td>Render homepage theo dữ liệu CMS, gồm hero, campaign, USP, social proof, UGC, newsletter và cấu hình bật/tắt block.</td></tr>
+      <tr><td><code>src/pages/AdminPage.jsx</code></td><td>Marketing monitor, quản trị sản phẩm, danh mục, Excel import/export, nội dung homepage/landing, kho ảnh và đơn hàng.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. Hành vi admin hiện tại</h2>
+  <div class="card">
+    <ul>
+      <li>Màn hình admin mặc định mở ở <code>Marketing monitor</code> để kiểm tra sức khỏe landing page, CTA, campaign, social proof, UGC và nguồn sản phẩm hỗ trợ chiến dịch.</li>
+      <li>Homepage không còn phụ thuộc hoàn toàn vào các heading cố định trong code; tab nội dung có phần <code>Homepage blocks</code> để đổi eyebrow/title/CTA và bật tắt từng block bằng dòng <code>key | eyebrow | title | CTA label | CTA link | on/off</code>.</li>
+      <li>Nhóm menu <code>Shop</code>, category tile trên homepage, các card phụ đầu trang, block theo dịp, nhóm danh mục ở footer và trang collection public lấy từ các collection <code>active</code> trong Admin. Không còn trộn các link editorial cố định như <code>Tết &amp; Hội Xuân</code> vào navigation public; nếu CTA homepage trỏ tới collection slug không còn active, storefront tự chuyển về collection active đầu tiên.</li>
+      <li>Website public hỗ trợ hai ngôn ngữ <code>vi</code> và <code>en</code>. Content API lưu được <code>locales.vi</code>/<code>locales.en</code>; tab nội dung trong Admin có bộ chọn VI/EN để sửa từng ngôn ngữ.</li>
+      <li>Form sản phẩm và danh mục có vùng <code>Bản dịch tiếng Anh</code>. Storefront ưu tiên <code>translations.en</code> khi khách chọn EN, field nào để trống sẽ fallback về nội dung gốc.</li>
+      <li>Một sản phẩm có thể thuộc nhiều danh mục qua <code>collectionSlugs</code>. Backend vẫn giữ <code>collectionSlug</code>/<code>category</code> làm trường chính để tương thích, nhưng lọc public kiểm tra cả danh sách nhiều danh mục.</li>
+      <li>Admin có template Excel, import hàng loạt sản phẩm, export sản phẩm hiện tại ra Excel và bỏ qua ảnh. Ảnh có thể bổ sung sau qua kho MinIO/admin form.</li>
+      <li>Font public dùng cặp local <code>UVNMuaThu.ttf</code> + <code>Nunito</code> qua <code>@font-face</code> trong <code>frontend/src/index.css</code>: <code>UVN Mua Thu</code> cho logo, <code>.font-display</code>, hero title, campaign title và section title; <code>Nunito</code> cho body, menu, button, form và admin. Các file được lưu trong <code>frontend/public/fonts</code> để không phụ thuộc dịch vụ font bên ngoài lúc runtime.</li>
+      <li>Typography scale đã được hạ bớt sau khi đổi display font: hero/page title dùng mức nhỏ hơn, card title giảm từ các mức quá lớn, và <code>text-wrap: balance</code> được áp cho heading để hạn chế dòng cuối chỉ còn 2-3 chữ. Màu chữ trong <code>frontend/src/index.css</code> được remap sang tông xanh lá trầm + accent coral/rose để ăn với nền pastel hiện tại.</li>
+      <li>Thông số upload ảnh chi tiết đã được nhúng trực tiếp trong <code>docs/admin-handoff-guide.html</code>, gồm tỉ lệ, kích thước khuyến nghị, kích thước tối thiểu và lưu ý crop cho từng khung hero/product/campaign/UGC.</li>
+      <li>Hướng dẫn vận hành chi tiết trang <code>/admin</code> nằm ở <code>docs/admin-handoff-guide.html</code>, bao gồm quyền truy cập, từng tab, format nhập liệu, API, dữ liệu bị ảnh hưởng và lỗi thường gặp.</li>
+      <li>Định hướng storefront hiện tại là <code>image-led marketing</code>: homepage, campaign, collection và merchandising hero ưu tiên ảnh lớn, tile ảnh overlay chữ ngắn; tránh thêm nhiều đoạn mô tả dài ở trang public.</li>
+      <li>Đã gỡ các nút shortcut trùng lặp ở đầu trang.</li>
+      <li>Đã gỡ các khối trạng thái dữ liệu kỹ thuật khỏi UI.</li>
+      <li>Đã gỡ các nút reset dữ liệu mẫu khỏi UI.</li>
+      <li>Kho ảnh có thể tải lên, liệt kê, copy URL, chọn cho sản phẩm và xóa.</li>
+      <li>Không xóa được ảnh nếu có sản phẩm đang dùng.</li>
+      <li>Public products/collections/categories/content được cache bằng Redis. Các thao tác admin mutate catalog/content sẽ tự xóa cache tương ứng.</li>
+      <li>Token hết hạn hoặc sai sẽ chuyển người dùng về trang đăng nhập.</li>
+    </ul>
+  </div>
+
+  <h2>6. API chính</h2>
+  <table>
+    <thead><tr><th>Nhóm</th><th>Endpoint</th></tr></thead>
+    <tbody>
+      <tr><td>Xác thực</td><td><code>POST /api/auth/register</code>, <code>POST /api/auth/login</code>, <code>GET /api/auth/me</code>, <code>PATCH /api/auth/me</code>, <code>POST /api/auth/logout</code></td></tr>
+      <tr><td>Sản phẩm public</td><td><code>GET /api/products/</code>, <code>GET /api/products/search</code>, <code>GET /api/products/{id}</code>, <code>GET /api/products/collections</code>, <code>GET /api/products/collections/{slug}</code>, <code>GET /api/products/categories/list</code></td></tr>
+      <tr><td>Nội dung public</td><td><code>GET /api/content/</code></td></tr>
+      <tr><td>Giỏ hàng</td><td><code>GET /api/cart/</code>, <code>POST /api/cart/items</code>, <code>PATCH /api/cart/items/{product_id}</code>, <code>DELETE /api/cart/items/{product_id}</code>, <code>DELETE /api/cart/</code></td></tr>
+      <tr><td>Yêu thích</td><td><code>GET /api/wishlist/</code>, <code>POST /api/wishlist/items</code>, <code>DELETE /api/wishlist/items/{product_id}</code>, <code>DELETE /api/wishlist/</code></td></tr>
+      <tr><td>Đơn hàng</td><td><code>POST /api/orders/</code>, <code>GET /api/orders/</code>, <code>GET /api/orders/track</code>, <code>GET /api/orders/{id}</code>, <code>PATCH /api/orders/{id}/cancel</code></td></tr>
+      <tr><td>Admin</td><td>Sản phẩm, danh mục, đơn hàng, trạng thái đơn, import catalog, thống kê, ảnh sản phẩm, content CMS.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. Lệnh kiểm tra</h2>
+  <pre>python3 -m py_compile backend/main.py backend/storage.py backend/cache.py backend/redis_client.py
+cd frontend && npm run build
+docker compose --env-file .env.production.example -f docker-compose.prod.yml config
+docker compose --env-file .env.production.example -f docker-compose.prod.yml run --rm --no-deps nginx nginx -t</pre>
+
+  <h2>8. Khoảng trống kỹ thuật</h2>
+  <div class="note risk">
+    Chưa có HTTPS tự động trong compose production, cổng thanh toán, nhật ký thao tác admin, phân quyền chi tiết, soft delete, tự merge giỏ hàng guest khi đăng nhập và chính sách media private/CDN đầy đủ.
+  </div>
+</main>
+</body>
+</html>

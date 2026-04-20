@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion Store - Bàn giao nghiệp vụ</title>
+<style>
+  :root { --bg:#0b1020; --card:#121a2b; --soft:#182238; --line:#29364f; --text:#e7edf7; --muted:#98a7bd; --blue:#38bdf8; --green:#34d399; --amber:#fbbf24; --red:#fb7185; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:40px 22px 64px; background:var(--bg); color:var(--text); font-family:Inter,Segoe UI,Arial,sans-serif; line-height:1.6; }
+  .page { max-width:1120px; margin:0 auto; }
+  header { margin-bottom:34px; }
+  .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:.22em; font-size:12px; font-weight:800; }
+  h1 { margin:.25rem 0 .75rem; font-size:clamp(32px,5vw,56px); line-height:1.05; }
+  h2 { margin:34px 0 14px; font-size:22px; color:var(--blue); border-bottom:1px solid var(--line); padding-bottom:8px; }
+  h3 { margin:0 0 10px; font-size:17px; }
+  p { color:var(--muted); margin:0 0 12px; }
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+  .tri { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin-bottom:16px; }
+  ul { margin:0; padding-left:18px; color:var(--text); }
+  li { margin:6px 0; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  th,td { border-bottom:1px solid var(--line); padding:12px; text-align:left; vertical-align:top; font-size:14px; }
+  th { background:var(--soft); color:var(--muted); text-transform:uppercase; font-size:12px; letter-spacing:.08em; }
+  tr:last-child td { border-bottom:0; }
+  code,.pill { background:#0f172a; border:1px solid var(--line); border-radius:8px; padding:2px 6px; color:#dff7ff; }
+  .pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .pill { font-size:12px; }
+  .note { border-left:4px solid var(--amber); background:rgba(251,191,36,.08); padding:14px 16px; border-radius:12px; color:#ffe8a3; margin:14px 0; }
+  .ok { border-left-color:var(--green); background:rgba(52,211,153,.08); color:#c9f7df; }
+  .risk { border-left-color:var(--red); background:rgba(251,113,133,.08); color:#ffd5de; }
+  footer { margin-top:42px; color:var(--muted); font-size:12px; text-align:center; }
+  @media (max-width:860px){ .grid,.tri{grid-template-columns:1fr;} body{padding:28px 14px 48px;} }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="eyebrow">Bàn giao nghiệp vụ</div>
+    <h1>Fashion Store</h1>
+    <p>Tài liệu dành cho BA, PO, QA và đội vận hành. Nội dung phản ánh hiện trạng sau khi thêm nhiều danh mục cho sản phẩm, Excel import/export, Redis cache và cấu hình production Nginx.</p>
+    <div class="pills">
+      <span class="pill">Trang bán hàng</span><span class="pill">Trang quản trị /admin</span><span class="pill">FastAPI</span><span class="pill">MongoDB</span><span class="pill">MinIO</span><span class="pill">Redis cache</span><span class="pill">Nginx production</span>
+    </div>
+  </header>
+
+  <h2>1. Tóm tắt phạm vi</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Mục tiêu sản phẩm</h3>
+      <p>Website bán hàng thời trang có trang công khai cho khách mua hàng và trang quản trị cho đội vận hành.</p>
+      <ul>
+        <li>Khách xem sản phẩm, tìm kiếm, chọn biến thể và đặt hàng.</li>
+        <li>Admin quản lý sản phẩm, danh mục, nội dung, kho ảnh và đơn hàng.</li>
+        <li>Ảnh sản phẩm lưu trong MinIO; dữ liệu nghiệp vụ lưu trong MongoDB.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Trạng thái hiện tại</h3>
+      <ul>
+        <li>Sản phẩm, danh mục, nội dung, đơn hàng, giỏ hàng và yêu thích của người dùng đăng nhập đã được lưu trong hệ thống API/MongoDB.</li>
+        <li>Giỏ hàng và yêu thích của khách chưa đăng nhập vẫn lưu trên trình duyệt.</li>
+        <li>Một sản phẩm có thể thuộc nhiều danh mục và xuất hiện ở nhiều trang collection khác nhau.</li>
+        <li>Admin có thể tải template Excel, import hàng loạt sản phẩm và export sản phẩm hiện tại ra Excel không kèm ảnh.</li>
+        <li>Redis cache public catalog/content để tăng tốc đọc; cache tự xóa khi admin sửa catalog/content.</li>
+        <li>Thanh toán thật chưa tích hợp; checkout tạo đơn ở trạng thái chờ xác nhận.</li>
+        <li>Admin không còn nút reset dữ liệu mẫu và không còn các khối trạng thái kỹ thuật.</li>
+      </ul>
+    </section>
+  </div>
+
+  <h2>2. Vai trò người dùng</h2>
+  <table>
+    <thead><tr><th>Vai trò</th><th>Quyền chính</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td>Khách chưa đăng nhập</td><td>Xem trang bán hàng, tìm kiếm, xem chi tiết sản phẩm, dùng giỏ hàng/yêu thích tạm, đặt hàng.</td><td>Dữ liệu giỏ hàng/yêu thích nằm trên trình duyệt.</td></tr>
+      <tr><td>Khách đã đăng nhập</td><td>Quản lý tài khoản, giỏ hàng, yêu thích, xem đơn hàng, hủy đơn khi còn được phép.</td><td>Cần phiên đăng nhập hợp lệ.</td></tr>
+      <tr><td>Admin</td><td>Quản lý sản phẩm, danh mục, nội dung, kho ảnh và đơn hàng.</td><td>Truy cập tại <code>/admin</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. Phạm vi trang bán hàng</h2>
+  <div class="tri">
+    <section class="card"><h3>Khám phá sản phẩm</h3><ul><li>Trang chủ</li><li>Trang danh mục</li><li>Tìm kiếm</li><li>Mới về, bán chạy, giảm giá</li><li>Chiến dịch, lookbook, dịp sử dụng</li></ul></section>
+    <section class="card"><h3>Chi tiết sản phẩm</h3><ul><li>Ảnh đại diện và thư viện ảnh</li><li>Giá bán và giá gạch</li><li>Nhãn sản phẩm</li><li>Biến thể theo size, màu, mã SKU và tồn kho</li><li>Chất liệu, ghi chú fit, tag phong cách</li></ul></section>
+    <section class="card"><h3>Trang hỗ trợ</h3><ul><li>Về thương hiệu</li><li>Hướng dẫn size</li><li>Giao hàng</li><li>Đổi trả</li><li>Câu hỏi thường gặp</li><li>Liên hệ</li><li>Theo dõi đơn</li></ul></section>
+  </div>
+
+  <h2>4. Phạm vi trang quản trị</h2>
+  <div class="grid">
+    <section class="card"><h3>Sản phẩm</h3><ul><li>Tạo, sửa, xóa sản phẩm.</li><li>Gắn một sản phẩm vào nhiều danh mục.</li><li>Import hàng loạt từ Excel, export danh sách sản phẩm ra Excel.</li><li>Quản lý trạng thái đang bán/nháp.</li><li>Biến thể là nguồn chính cho tồn kho, size và màu.</li><li>Chọn ảnh từ kho MinIO hoặc tải ảnh mới.</li></ul></section>
+    <section class="card"><h3>Danh mục</h3><ul><li>Tạo, sửa, xóa danh mục.</li><li>Không cho xóa danh mục nếu còn sản phẩm đang gắn.</li><li>Khi đổi slug danh mục, sản phẩm liên quan được cập nhật theo trong cả danh sách nhiều danh mục.</li></ul></section>
+    <section class="card"><h3>Nội dung</h3><ul><li>Chỉnh nội dung trang chủ.</li><li>Chỉnh ảnh nền website dùng chung VI/EN.</li><li>Chỉnh các trang bán hàng.</li><li>Chỉnh bài editorial.</li><li>Chỉnh trang thông tin và hỗ trợ.</li></ul></section>
+    <section class="card"><h3>Đơn hàng</h3><ul><li>Xem danh sách và chi tiết đơn.</li><li>Cập nhật trạng thái đơn.</li><li>Dòng thời gian theo dõi đơn tự cập nhật theo trạng thái.</li></ul></section>
+  </div>
+  <div class="note ok">Màn admin hiện tập trung vào vận hành: thống kê, sản phẩm, danh mục, Excel import/export, nội dung, kho ảnh MinIO và đơn hàng.</div>
+
+  <h2>5. Kho ảnh MinIO</h2>
+  <table>
+    <thead><tr><th>Chức năng</th><th>Quy tắc nghiệp vụ</th></tr></thead>
+    <tbody>
+      <tr><td>Tải ảnh lên</td><td>Admin tải ảnh qua dịch vụ API. Dịch vụ API kiểm tra JPG/PNG/WEBP/GIF, tối đa 10 MB, rồi lưu vào thư mục <code>products/</code> trong MinIO.</td></tr>
+      <tr><td>Xem kho ảnh</td><td>Hiển thị đường dẫn ảnh, tên object, loại ảnh, dung lượng, thời gian cập nhật và số sản phẩm đang dùng ảnh.</td></tr>
+      <tr><td>Gắn ảnh vào sản phẩm</td><td>Admin có thể đặt ảnh làm ảnh đại diện hoặc thêm vào thư viện ảnh sản phẩm.</td></tr>
+      <tr><td>Chọn ảnh nền website</td><td>Admin có thể dùng ảnh từ kho MinIO làm background website; ảnh nền được lưu vào content backend và dùng chung cho VI/EN.</td></tr>
+      <tr><td>Xóa ảnh</td><td>Không cho xóa ảnh nếu đang được sản phẩm sử dụng. Dịch vụ API vẫn chặn xóa để tránh lỗi ảnh hỏng.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. Quy tắc thương mại</h2>
+  <table>
+    <thead><tr><th>Luồng</th><th>Hành vi hiện tại</th></tr></thead>
+    <tbody>
+      <tr><td>Giỏ hàng</td><td>Người dùng đăng nhập lưu giỏ hàng trong MongoDB. Khách chưa đăng nhập lưu giỏ hàng trên trình duyệt. Hệ thống kiểm tra tồn kho theo biến thể.</td></tr>
+      <tr><td>Yêu thích</td><td>Người dùng đăng nhập lưu trong MongoDB. Khách chưa đăng nhập lưu trên trình duyệt.</td></tr>
+      <tr><td>Đặt hàng</td><td>Cho phép khách hoặc người dùng đăng nhập tạo đơn. Sau khi tạo đơn, tồn kho biến thể bị trừ.</td></tr>
+      <tr><td>Phí giao hàng</td><td>Miễn phí nếu tổng tạm tính lớn hơn 200; ngược lại phí là 18.</td></tr>
+      <tr><td>Hủy đơn</td><td>Khách chỉ hủy được đơn ở trạng thái chờ xác nhận hoặc đã xác nhận.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. Trạng thái đơn hàng</h2>
+  <table>
+    <thead><tr><th>Mã trạng thái</th><th>Nhãn hiển thị</th><th>Ý nghĩa</th></tr></thead>
+    <tbody>
+      <tr><td><code>pending</code></td><td>Chờ xác nhận thanh toán</td><td>Đơn mới tạo.</td></tr>
+      <tr><td><code>confirmed</code></td><td>Đã xác nhận thanh toán</td><td>Admin đã xác nhận thanh toán.</td></tr>
+      <tr><td><code>processing</code></td><td>Đang chuẩn bị hàng</td><td>Đơn đang được chuẩn bị.</td></tr>
+      <tr><td><code>shipped</code></td><td>Đang giao hàng</td><td>Đơn đã giao cho đơn vị vận chuyển.</td></tr>
+      <tr><td><code>delivered</code></td><td>Đã giao thành công</td><td>Đơn hoàn tất.</td></tr>
+      <tr><td><code>cancelled</code></td><td>Đã hủy</td><td>Đơn bị hủy.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. Danh sách kiểm thử BA/QA</h2>
+  <div class="grid">
+    <section class="card"><h3>Trang bán hàng</h3><ul><li>Các trang public hiển thị đúng.</li><li>Sản phẩm nháp không hiển thị ngoài public.</li><li>Không cho thêm quá tồn kho.</li><li>Checkout trừ tồn kho.</li><li>Theo dõi đơn bằng mã đơn.</li></ul></section>
+    <section class="card"><h3>Trang quản trị</h3><ul><li>Admin đăng nhập được vào <code>/admin</code>.</li><li>Tạo sản phẩm có biến thể, nhiều danh mục và ảnh.</li><li>Import nhiều sản phẩm từ Excel và export danh sách hiện tại.</li><li>Không xóa danh mục còn sản phẩm.</li><li>Không xóa ảnh đang được sản phẩm dùng.</li><li>Đổi trạng thái đơn cập nhật dòng thời gian.</li></ul></section>
+  </div>
+
+  <h2>9. Các quyết định còn mở</h2>
+  <div class="card">
+    <ul>
+      <li>Cổng thanh toán, hoàn tiền, đối soát giao dịch.</li>
+      <li>Khuyến mãi, mã giảm giá, thuế.</li>
+      <li>Tích hợp đơn vị vận chuyển và bảng phí giao hàng.</li>
+      <li>Phân quyền admin chi tiết hơn ngoài cờ admin hiện tại.</li>
+      <li>Nhật ký thao tác của admin.</li>
+      <li>HTTPS production trực tiếp bằng Nginx/Certbot hay đặt sau Cloudflare/CDN.</li>
+      <li>Chính sách ảnh production dài hạn: dùng MinIO public qua Nginx, bucket private, CDN hay signed URL.</li>
+    </ul>
+  </div>
+
+  <h2>10. Đường dẫn local</h2>
+  <table>
+    <thead><tr><th>Mục</th><th>Đường dẫn</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td>Trang bán hàng</td><td><code>http://localhost:5173</code></td><td>Website public.</td></tr>
+      <tr><td>Trang quản trị</td><td><code>http://localhost:5173/admin</code></td><td>Tài khoản local: <code>admin</code> / <code>Admin123!</code>.</td></tr>
+      <tr><td>Tài liệu API</td><td><code>http://localhost:8000/docs</code></td><td>Swagger UI.</td></tr>
+      <tr><td>MinIO Console</td><td><code>http://localhost:9001</code></td><td><code>minioadmin</code> / <code>minioadmin123</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>11. Production</h2>
+  <div class="card">
+    <ul>
+      <li>Production dùng <code>docker-compose.prod.yml</code> và <code>nginx</code> làm service public duy nhất.</li>
+      <li>Nginx serve frontend static, proxy <code>/api/</code> sang backend và proxy <code>/fashion-store-assets/</code> sang MinIO.</li>
+      <li>MongoDB, Redis, MinIO và backend không nên mở port trực tiếp ra internet.</li>
+      <li>File <code>.env.production.example</code> là mẫu cấu hình; trước khi deploy phải đổi domain, <code>SECRET_KEY</code>, Mongo password, MinIO password và admin password.</li>
+    </ul>
+  </div>
+
+  <footer>Fashion Store - tài liệu bàn giao nghiệp vụ đã Việt hóa.</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,10 @@
+.git
+.env
+.env.*
+!.env.production.example
+**/node_modules
+**/dist
+**/__pycache__
+**/.pytest_cache
+**/.DS_Store
+*.log

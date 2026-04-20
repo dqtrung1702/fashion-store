@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion Store - Mô hình dữ liệu</title>
+<style>
+  :root{--bg:#0b1020;--card:#121a2b;--soft:#182238;--line:#29364f;--text:#e7edf7;--muted:#98a7bd;--blue:#38bdf8;--green:#34d399;--amber:#fbbf24;--red:#fb7185}
+  *{box-sizing:border-box}
+  body{margin:0;padding:40px 22px 64px;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.6}
+  .page{max-width:1160px;margin:0 auto}
+  .eyebrow{color:var(--blue);text-transform:uppercase;letter-spacing:.18em;font-size:12px;font-weight:800}
+  h1{font-size:clamp(32px,5vw,56px);margin:.25rem 0 1rem;line-height:1.05}
+  h2{margin:34px 0 14px;color:var(--blue);font-size:22px;border-bottom:1px solid var(--line);padding-bottom:8px}
+  h3{margin:0 0 10px;font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:16px}
+  p{color:var(--muted);margin:0 0 12px}
+  ul{margin:0;padding-left:18px}
+  li{margin:6px 0}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
+  th,td{border-bottom:1px solid var(--line);padding:12px;text-align:left;vertical-align:top;font-size:14px}
+  th{background:var(--soft);color:var(--muted);text-transform:uppercase;font-size:12px;letter-spacing:.08em}
+  tr:last-child td{border-bottom:0}
+  code{background:#0f172a;border:1px solid var(--line);border-radius:8px;padding:2px 6px;color:#dff7ff}
+  .note{border-left:4px solid var(--amber);background:rgba(251,191,36,.08);padding:14px 16px;border-radius:8px;color:#ffe8a3;margin:14px 0}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}body{padding:28px 14px 48px}}
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="eyebrow">Mô hình dữ liệu</div>
+    <h1>Mô hình dữ liệu Fashion Store</h1>
+    <p>Dữ liệu nghiệp vụ chính nằm trong MongoDB. File ảnh nằm trong MinIO; MongoDB chỉ lưu đường dẫn ảnh hoặc tên object để sản phẩm tham chiếu. Redis được dùng làm cache mềm cho dữ liệu public đọc nhiều.</p>
+  </header>
+
+  <h2>1. Tổng quan collection</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Collection</th>
+        <th>Vai trò</th>
+        <th>Chỉ mục chính</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>users</code></td>
+        <td>Lưu tài khoản khách hàng và quản trị viên.</td>
+        <td><code>email</code> unique, <code>username</code> unique.</td>
+      </tr>
+      <tr>
+        <td><code>products</code></td>
+        <td>Lưu catalog sản phẩm, biến thể, giá, tồn kho, ảnh, nhãn hiển thị và thông tin SEO.</td>
+        <td><code>slug</code> unique, text index cho <code>name</code>/<code>description</code>, index theo <code>status</code>, <code>collectionSlug</code>, <code>collectionSlugs</code>, <code>category</code>, <code>categories</code>, <code>price</code>.</td>
+      </tr>
+      <tr>
+        <td><code>catalog_collections</code></td>
+        <td>Lưu danh mục/collection dùng ở storefront và màn hình admin.</td>
+        <td><code>slug</code> unique, index theo <code>isActive</code>/<code>sortPriority</code>.</td>
+      </tr>
+      <tr>
+        <td><code>site_content</code></td>
+        <td>Lưu một gói nội dung CMS cho header/footer, trang chủ, landing page, editorial page và trang thông tin.</td>
+        <td><code>key</code> unique, hiện dùng giá trị <code>site-content</code>.</td>
+      </tr>
+      <tr>
+        <td><code>carts</code></td>
+        <td>Lưu giỏ hàng của người dùng đã đăng nhập.</td>
+        <td><code>user_id</code> unique, <code>updated_at</code>.</td>
+      </tr>
+      <tr>
+        <td><code>wishlists</code></td>
+        <td>Lưu danh sách yêu thích của người dùng đã đăng nhập.</td>
+        <td><code>user_id</code> unique.</td>
+      </tr>
+      <tr>
+        <td><code>orders</code></td>
+        <td>Lưu đơn hàng, bản chụp thông tin sản phẩm tại thời điểm mua, trạng thái và lịch sử theo dõi.</td>
+        <td><code>user_id</code>, <code>email</code>, <code>created_at</code>.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. Sản phẩm</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Trường</th>
+        <th>Kiểu dữ liệu</th>
+        <th>Quy tắc</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>slug</code></td><td>string</td><td>Bắt buộc, duy nhất, dài 2-160 ký tự. Đây là khóa public dùng trong URL.</td></tr>
+      <tr><td><code>sku</code></td><td>string</td><td>Mã SKU gốc do admin nhập.</td></tr>
+      <tr><td><code>status</code></td><td><code>active</code> hoặc <code>draft</code></td><td>Sản phẩm <code>draft</code> mặc định không xuất hiện ở storefront.</td></tr>
+      <tr><td><code>name</code></td><td>string</td><td>Bắt buộc.</td></tr>
+      <tr><td><code>description</code></td><td>string</td><td>Bắt buộc, tối thiểu 10 ký tự.</td></tr>
+      <tr><td><code>collectionSlug</code></td><td>string</td><td>Bắt buộc. Collection chính của sản phẩm, lấy từ phần tử đầu tiên trong danh sách collection đã chọn.</td></tr>
+      <tr><td><code>collectionSlugs</code></td><td>string[]</td><td>Danh sách collection mà sản phẩm thuộc về. Một sản phẩm có thể xuất hiện ở nhiều danh mục khác nhau; backend kiểm tra tất cả slug phải tồn tại trong <code>catalog_collections</code>.</td></tr>
+      <tr><td><code>category</code></td><td>string</td><td>Tên collection chính, được suy ra từ <code>collectionSlug</code> để tương thích UI cũ.</td></tr>
+      <tr><td><code>categories</code></td><td>string[]</td><td>Danh sách tên collection tương ứng với <code>collectionSlugs</code>, dùng cho hiển thị và lọc public.</td></tr>
+      <tr><td><code>price</code></td><td>number</td><td>Bắt buộc, không âm.</td></tr>
+      <tr><td><code>compareAtPrice</code></td><td>number hoặc null</td><td>Giá gạch ngang, không bắt buộc, không âm.</td></tr>
+      <tr><td><code>coverImage</code></td><td>string</td><td>Ảnh đại diện sản phẩm, thường là URL trỏ về MinIO.</td></tr>
+      <tr><td><code>images</code></td><td>string[]</td><td>Danh sách ảnh gallery của sản phẩm.</td></tr>
+      <tr><td><code>variants</code></td><td><code>ProductVariant[]</code></td><td>Nguồn dữ liệu chính để tính tồn kho, size và màu.</td></tr>
+      <tr><td><code>styleTags</code></td><td>string[]</td><td>Nhãn phục vụ merchandising và lọc/hiển thị.</td></tr>
+      <tr><td><code>material</code>, <code>fitNotes</code></td><td>string</td><td>Nội dung mô tả chất liệu và phom dáng.</td></tr>
+      <tr><td><code>seoTitle</code>, <code>seoDescription</code></td><td>string</td><td>Nội dung SEO của trang chi tiết sản phẩm.</td></tr>
+      <tr><td><code>isNew</code>, <code>isBestSeller</code>, <code>isOnSale</code></td><td>boolean</td><td>Các cờ hiển thị badge trên storefront.</td></tr>
+      <tr><td><code>trendingScore</code></td><td>integer</td><td>Điểm sắp xếp/xu hướng, nằm trong khoảng 0-100.</td></tr>
+      <tr><td><code>stock</code>, <code>sizes</code>, <code>colors</code></td><td>dữ liệu suy ra</td><td>Dịch vụ API tính khi serialize sản phẩm từ các variant đang active.</td></tr>
+      <tr><td><code>created_at</code>, <code>updated_at</code></td><td>datetime</td><td>Thời điểm tạo và cập nhật bản ghi.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. Biến thể sản phẩm</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Trường</th>
+        <th>Kiểu dữ liệu</th>
+        <th>Quy tắc</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>string</td><td>Bắt buộc trong API model. Form admin tự sinh nếu người dùng chưa nhập.</td></tr>
+      <tr><td><code>size</code></td><td>string</td><td>Mặc định là <code>One Size</code>.</td></tr>
+      <tr><td><code>color</code></td><td>string</td><td>Không bắt buộc.</td></tr>
+      <tr><td><code>sku</code></td><td>string</td><td>Không bắt buộc, nhưng được dùng để khớp item trong giỏ hàng và đơn hàng.</td></tr>
+      <tr><td><code>stock</code></td><td>integer</td><td>Bắt buộc, không âm.</td></tr>
+      <tr><td><code>price</code></td><td>number hoặc null</td><td>Giá riêng của variant. Nếu không có, hệ thống dùng giá sản phẩm.</td></tr>
+      <tr><td><code>isActive</code></td><td>boolean</td><td>Mặc định <code>true</code>. Variant inactive không được tính vào tồn kho public.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Danh mục catalog</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Trường</th>
+        <th>Quy tắc</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>slug</code></td><td>Bắt buộc, duy nhất, dài 2-120 ký tự.</td></tr>
+      <tr><td><code>title</code></td><td>Tên hiển thị của danh mục, bắt buộc.</td></tr>
+      <tr><td><code>description</code></td><td>Mô tả danh mục, bắt buộc, tối thiểu 10 ký tự.</td></tr>
+      <tr><td><code>featuredKeywords</code></td><td>Từ khóa nổi bật, dùng cho nội dung merchandising và dữ liệu dự phòng local.</td></tr>
+      <tr><td><code>seoHeading</code>, <code>seoBody</code></td><td>Nội dung SEO cho trang collection.</td></tr>
+      <tr><td><code>sortPriority</code></td><td>Thứ tự sắp xếp, mặc định 99.</td></tr>
+      <tr><td><code>isActive</code></td><td>Quyết định danh mục có được công khai ở storefront hay không.</td></tr>
+      <tr><td><code>created_at</code>, <code>updated_at</code></td><td>Thời điểm tạo và cập nhật bản ghi.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. Gói nội dung website</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Cấu trúc chính</h3>
+      <ul>
+        <li><code>siteChrome</code>: nội dung thương hiệu, announcement, footer, thời lượng giữ hàng và ảnh nền website.</li>
+        <li><code>homePageContent</code>: nội dung trang chủ.</li>
+        <li><code>merchandisingPages</code>: các trang bán hàng/landing page theo chiến dịch.</li>
+        <li><code>editorialPages</code>: nội dung bài viết hoặc lookbook.</li>
+        <li><code>infoPages</code>: trang thông tin như shipping, returns, privacy.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Cách lưu</h3>
+      <ul>
+        <li>Lưu thành một document trong collection <code>site_content</code>.</li>
+        <li>Khóa document hiện tại là <code>site-content</code>.</li>
+        <li>Admin gọi <code>POST /api/admin/content/import</code> để upsert bundle này.</li>
+        <li>Nội dung hỗ trợ <code>locales.vi</code>/<code>locales.en</code>; <code>backgroundImage</code> được đồng bộ như trường dùng chung cho cả hai ngôn ngữ.</li>
+      </ul>
+    </section>
+  </div>
+
+  <h2>6. Giỏ hàng, yêu thích và đơn hàng</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Nhóm dữ liệu</th>
+        <th>Trường quan trọng</th>
+        <th>Ghi chú nghiệp vụ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Giỏ hàng</td>
+        <td><code>user_id</code>, <code>items</code>, <code>subtotal_amount</code>, <code>shipping_amount</code>, <code>total_amount</code></td>
+        <td>Item lưu <code>product_id</code>, <code>variant_id</code>/<code>sku</code> và snapshot tên/ảnh/giá. Khi trả về API, dịch vụ API serialize lại với catalog mới nhất nếu còn tìm thấy sản phẩm.</td>
+      </tr>
+      <tr>
+        <td>Yêu thích</td>
+        <td><code>user_id</code>, <code>items</code></td>
+        <td>Item lưu <code>product_id</code> và <code>added_at</code>. API trả về danh sách sản phẩm đã serialize để frontend hiển thị.</td>
+      </tr>
+      <tr>
+        <td>Đơn hàng</td>
+        <td><code>orderNumber</code>, <code>user_id</code>, <code>email</code>, <code>items</code>, các trường tổng tiền, <code>status</code>, <code>shipping_address</code>, <code>contact_phone</code>, <code>trackingSteps</code></td>
+        <td>Item trong đơn hàng là snapshot tại thời điểm mua. Sau khi tạo đơn, dịch vụ API trừ tồn kho theo variant.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>7. Trạng thái đơn hàng</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Giá trị</th>
+        <th>Ý nghĩa</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>pending</code></td><td>Đơn mới tạo, chờ xác nhận.</td></tr>
+      <tr><td><code>confirmed</code></td><td>Đơn đã được xác nhận.</td></tr>
+      <tr><td><code>processing</code></td><td>Đơn đang được chuẩn bị.</td></tr>
+      <tr><td><code>shipped</code></td><td>Đơn đã giao cho đơn vị vận chuyển.</td></tr>
+      <tr><td><code>delivered</code></td><td>Đơn đã giao thành công.</td></tr>
+      <tr><td><code>cancelled</code></td><td>Đơn đã hủy.</td></tr>
+    </tbody>
+  </table>
+  <div class="note">Phí vận chuyển hiện được tính theo quy tắc trong dịch vụ API: miễn phí nếu subtotal lớn hơn 200, ngược lại phí là 18.</div>
+
+  <h2>8. Tài sản ảnh trong MinIO</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Trường</th>
+        <th>Ý nghĩa</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><code>object_name</code></td><td>Tên object trong MinIO. API kho ảnh sản phẩm chỉ làm việc với prefix <code>products/...</code>.</td></tr>
+      <tr><td><code>url</code></td><td>URL public được tạo từ <code>MINIO_PUBLIC_SECURE</code>, <code>MINIO_PUBLIC_ENDPOINT</code>, bucket và object name.</td></tr>
+      <tr><td><code>content_type</code></td><td>Loại file được lấy từ upload content type hoặc suy ra từ phần mở rộng file.</td></tr>
+      <tr><td><code>size</code></td><td>Dung lượng file theo byte.</td></tr>
+      <tr><td><code>last_modified</code></td><td>Thời điểm object được cập nhật lần cuối trong MinIO.</td></tr>
+      <tr><td><code>product_usage_count</code></td><td>Số sản phẩm đang tham chiếu ảnh này trong <code>coverImage</code> hoặc <code>images</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>9. Quy tắc xóa ảnh</h2>
+  <ul>
+    <li>Giao diện admin hiển thị số sản phẩm đang dùng từng ảnh trong thư viện MinIO.</li>
+    <li>Nếu <code>product_usage_count</code> lớn hơn 0, nút xóa bị khóa ở màn hình admin.</li>
+    <li>Dịch vụ API vẫn kiểm tra lại trước khi xóa. Nếu ảnh đang được sản phẩm dùng, API trả lỗi 409 để tránh mất ảnh sản phẩm.</li>
+    <li>Chỉ ảnh thuộc prefix <code>products/</code> được liệt kê và xóa qua API quản trị kho ảnh sản phẩm.</li>
+  </ul>
+
+  <h2>10. Redis cache</h2>
+  <p>Redis không phải nguồn dữ liệu gốc. Nếu Redis lỗi, API bỏ qua cache và đọc MongoDB trực tiếp.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Nhóm cache</th>
+        <th>Key/pattern</th>
+        <th>TTL</th>
+        <th>Invalidation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Danh sách/chi tiết sản phẩm</td><td><code>cache:products:*</code></td><td>120 giây, search 60 giây</td><td>Xóa khi admin tạo/sửa/xóa sản phẩm hoặc import catalog.</td></tr>
+      <tr><td>Danh sách/chi tiết collection</td><td><code>cache:collections:*</code></td><td>600 giây</td><td>Xóa khi admin tạo/sửa/xóa collection hoặc import catalog.</td></tr>
+      <tr><td>Danh sách category</td><td><code>cache:categories:*</code></td><td>600 giây</td><td>Xóa cùng catalog cache.</td></tr>
+      <tr><td>Content public</td><td><code>cache:content:*</code></td><td>600 giây</td><td>Xóa khi admin import/lưu content.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>11. Excel import/export sản phẩm</h2>
+  <ul>
+    <li>Excel được xử lý ở frontend bằng thư viện <code>xlsx</code>; backend vẫn nhận payload sản phẩm/collection qua API admin hiện có.</li>
+    <li>Admin có thể tải template Excel, điền nhiều dòng sản phẩm và import hàng loạt. Ảnh có thể để trống rồi bổ sung trong admin sau.</li>
+    <li>Export Excel hiện xuất dữ liệu sản phẩm hiện tại và bỏ qua phần ảnh theo yêu cầu vận hành.</li>
+    <li>Các cột danh mục dùng slug collection; nhiều danh mục có thể nhập dạng danh sách ngăn cách bằng dấu phẩy hoặc xuống dòng tùy template.</li>
+  </ul>
+
+  <h2>12. Dữ liệu phía trình duyệt</h2>
+  <p>Một số state vẫn có lớp dữ liệu dự phòng local trong giao diện để tránh làm hỏng trải nghiệm khi API chưa sẵn sàng hoặc người dùng chưa đăng nhập.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Nhóm dữ liệu</th>
+        <th>Cách dùng hiện tại</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Giỏ hàng khách</td><td>Giỏ hàng của khách chưa đăng nhập lưu ở trình duyệt.</td></tr>
+      <tr><td>Yêu thích khách</td><td>Danh sách yêu thích của khách chưa đăng nhập lưu ở trình duyệt.</td></tr>
+      <tr><td>Dữ liệu catalog/nội dung dự phòng</td><td>Store giao diện còn có dữ liệu dự phòng local và hàm reset ở tầng state, nhưng các nút reset nguy hiểm đã được gỡ khỏi màn hình admin.</td></tr>
+    </tbody>
+  </table>
+</main>
+</body>
+</html>

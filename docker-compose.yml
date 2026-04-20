@@ -1,0 +1,89 @@
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: fashion_store_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - fashion_network
+
+  minio:
+    image: minio/minio:latest
+    container_name: fashion_store_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - fashion_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: fashion_store_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - fashion_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fashion_store_backend
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URL: mongodb://admin:admin@mongodb:27017
+      DATABASE_NAME: fashion_store
+      SECRET_KEY: your-secret-key-change-in-production
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_BUCKET: fashion-store-assets
+      MINIO_SECURE: "false"
+      REDIS_URL: redis://redis:6379/0
+      CACHE_ENABLED: "true"
+    depends_on:
+      - mongodb
+      - minio
+      - redis
+    volumes:
+      - ./backend:/app
+    networks:
+      - fashion_network
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fashion_store_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - fashion_network
+    command: sh -c "npm ci --include=optional && npm run build && npm run preview -- --host 0.0.0.0"
+
+volumes:
+  mongodb_data:
+  minio_data:
+  redis_data:
+
+networks:
+  fashion_network:
+    driver: bridge

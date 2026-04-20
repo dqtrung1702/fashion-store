@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fashion Store - Sơ đồ kiến trúc</title>
+<style>
+  :root {
+    --bg: #0a0f1a;
+    --surface: #101827;
+    --surface2: #172234;
+    --surface3: #0d1524;
+    --border: #253650;
+    --text: #e7eef8;
+    --muted: #8fa1b8;
+    --dim: #5d718b;
+    --cyan: #22d3ee;
+    --green: #34d399;
+    --amber: #f59e0b;
+    --rose: #fb7185;
+    --violet: #a78bfa;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 40px 22px 64px;
+    background:
+      radial-gradient(ellipse 70% 50% at 15% 0%, rgba(34, 211, 238, .07), transparent 55%),
+      radial-gradient(ellipse 60% 50% at 88% 12%, rgba(52, 211, 153, .05), transparent 55%),
+      radial-gradient(ellipse 50% 40% at 50% 80%, rgba(167, 139, 250, .04), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: Inter, Segoe UI, Arial, sans-serif;
+    line-height: 1.55;
+  }
+
+  .page { max-width: 1160px; margin: 0 auto; position: relative; }
+  header { text-align: center; margin-bottom: 48px; }
+  .label {
+    color: var(--cyan);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(32px, 5vw, 54px);
+    line-height: 1.08;
+    letter-spacing: 0;
+  }
+  h1 span { color: var(--cyan); }
+  header p { color: var(--muted); max-width: 820px; margin: 14px auto 0; }
+
+  .section { margin-bottom: 54px; }
+  /* section-title defined below */
+  .card {
+    background: linear-gradient(160deg, rgba(255,255,255,.025) 0%, rgba(255,255,255,0) 60%), var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 26px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    transition: border-color .3s;
+  }
+  .card:hover { border-color: rgba(34,211,238,.18); }
+  .card-title {
+    margin-bottom: 22px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  p { color: var(--muted); margin: 0 0 14px; }
+  ul { margin: 0; padding-left: 18px; }
+  li { margin: 6px 0; }
+  code {
+    background: #0b1322;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #dff7ff;
+    padding: 2px 6px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 16px;
+  }
+  th, td {
+    border-bottom: 1px solid var(--border);
+    padding: 12px;
+    text-align: left;
+    vertical-align: top;
+    font-size: 14px;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--muted);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: .08em;
+  }
+  tr:last-child td { border-bottom: 0; }
+  /* note defined below */
+  /* mini defined below */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  svg { width: 100%; height: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow: visible; }
+  /* Subtle arrow glow using filter on path */
+  .arrow, .arrow-green, .arrow-amber, .arrow-rose, .arrow-violet {
+    transition: opacity .2s;
+  }
+  /* Section title polish */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+    color: var(--cyan);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    opacity: .85;
+  }
+  .section-title::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, var(--border), transparent); }
+  /* Note card */
+  .note {
+    border-left: 3px solid var(--amber);
+    background: rgba(245, 158, 11, .06);
+    color: #ffe7b5;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 13.5px;
+  }
+  /* Mini cards */
+  .mini { background: linear-gradient(160deg, rgba(255,255,255,.02), transparent), var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .mini h3 { margin: 0 0 12px; font-size: 15px; color: var(--text); }
+  /* Table */
+  table { border-radius: 10px; }
+  th { font-weight: 600; }
+  .zone { fill: rgba(255,255,255,.012); stroke: var(--border); stroke-width: 1.2; stroke-dasharray: 6 5; }
+  .node { fill: var(--surface2); stroke: var(--border); stroke-width: 1.4; }
+  .node-cyan { stroke: rgba(34, 211, 238, .6); fill: rgba(34, 211, 238, .055); }
+  .node-green { stroke: rgba(52, 211, 153, .6); fill: rgba(52, 211, 153, .055); }
+  .node-amber { stroke: rgba(245, 158, 11, .6); fill: rgba(245, 158, 11, .055); }
+  .node-rose { stroke: rgba(251, 113, 133, .6); fill: rgba(251, 113, 133, .055); }
+  .node-violet { stroke: rgba(167, 139, 250, .6); fill: rgba(167, 139, 250, .055); }
+  .title { fill: var(--text); font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+  .subtitle { fill: var(--muted); font-size: 10px; }
+  .tiny { fill: var(--dim); font-size: 9px; }
+  .zone-label { fill: var(--dim); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
+  .arrow { fill: none; stroke: var(--cyan); stroke-width: 1.5; marker-end: url(#arr-cyan); stroke-linecap: round; stroke-linejoin: round; }
+  .arrow-green { stroke: var(--green); marker-end: url(#arr-green); }
+  .arrow-amber { stroke: var(--amber); marker-end: url(#arr-amber); }
+  .arrow-rose { stroke: var(--rose); marker-end: url(#arr-rose); }
+  .arrow-violet { stroke: var(--violet); marker-end: url(#arr-violet); }
+  .return { stroke-dasharray: 4 3; opacity: .72; }
+  .lifeline { stroke: var(--border); stroke-width: 1; stroke-dasharray: 4 6; opacity: .55; }
+  @media (max-width: 860px) {
+    body { padding: 28px 14px 48px; }
+    .grid { grid-template-columns: 1fr; }
+    .card { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <div class="label">Sơ đồ kiến trúc</div>
+    <h1>Kiến trúc <span>Fashion Store</span></h1>
+    <p>Bộ sơ đồ kiến trúc hiện trạng: mô hình ngữ cảnh, logic, vật lý, production Nginx, Redis cache, dữ liệu, luồng upload ảnh, checkout và xác thực. Tất cả sơ đồ là SVG nội tuyến nên có thể mở file HTML trực tiếp.</p>
+  </header>
+
+  <svg width="0" height="0" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- Cyan arrows -->
+      <marker id="arr-cyan" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+        <path d="M1,1 L8,3.5 L1,6" fill="none" stroke="#22d3ee" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <!-- Green arrows -->
+      <marker id="arr-green" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+        <path d="M1,1 L8,3.5 L1,6" fill="none" stroke="#34d399" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <!-- Amber arrows -->
+      <marker id="arr-amber" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+        <path d="M1,1 L8,3.5 L1,6" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <!-- Rose arrows -->
+      <marker id="arr-rose" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+        <path d="M1,1 L8,3.5 L1,6" fill="none" stroke="#fb7185" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <!-- Violet arrows -->
+      <marker id="arr-violet" markerWidth="10" markerHeight="10" refX="8" refY="3.5" orient="auto" markerUnits="strokeWidth">
+        <path d="M1,1 L8,3.5 L1,6" fill="none" stroke="#a78bfa" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+      <!-- Glow filters -->
+      <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <section class="section">
+    <div class="section-title">01 — Mô hình ngữ cảnh</div>
+    <div class="card">
+      <div class="card-title">Fashion Store trong góc nhìn nghiệp vụ</div>
+      <svg viewBox="0 0 920 390" role="img" aria-label="Mô hình ngữ cảnh Fashion Store">
+        <rect x="300" y="42" width="320" height="275" class="zone" rx="8"/>
+        <text x="460" y="64" text-anchor="middle" class="zone-label">Fashion Store System</text>
+
+        <rect x="36" y="90" width="180" height="104" class="node node-cyan" rx="8"/>
+        <text x="126" y="122" text-anchor="middle" class="title">Khách mua hàng</text>
+        <text x="126" y="145" text-anchor="middle" class="subtitle">Xem catalog</text>
+        <text x="126" y="162" text-anchor="middle" class="subtitle">Giỏ hàng · Checkout</text>
+
+        <rect x="704" y="90" width="180" height="104" class="node node-amber" rx="8"/>
+        <text x="794" y="122" text-anchor="middle" class="title">Admin vận hành</text>
+        <text x="794" y="145" text-anchor="middle" class="subtitle">Sản phẩm · Danh mục</text>
+        <text x="794" y="162" text-anchor="middle" class="subtitle">Ảnh · Đơn hàng</text>
+
+        <rect x="340" y="92" width="240" height="86" class="node node-green" rx="8"/>
+        <text x="460" y="123" text-anchor="middle" class="title">Storefront</text>
+        <text x="460" y="146" text-anchor="middle" class="subtitle">Trang public, cart, checkout</text>
+
+        <rect x="340" y="205" width="240" height="86" class="node node-violet" rx="8"/>
+        <text x="460" y="236" text-anchor="middle" class="title">Admin Console</text>
+        <text x="460" y="259" text-anchor="middle" class="subtitle">Quản trị catalog, CMS, media</text>
+
+        <rect x="160" y="265" width="160" height="72" class="node" rx="8"/>
+        <text x="240" y="294" text-anchor="middle" class="title">MongoDB</text>
+        <text x="240" y="316" text-anchor="middle" class="subtitle">Dữ liệu nghiệp vụ</text>
+
+        <rect x="600" y="265" width="160" height="72" class="node node-rose" rx="8"/>
+        <text x="680" y="294" text-anchor="middle" class="title">MinIO</text>
+        <text x="680" y="316" text-anchor="middle" class="subtitle">Ảnh sản phẩm</text>
+
+        <rect x="380" y="330" width="160" height="50" class="node node-violet" rx="8"/>
+        <text x="460" y="352" text-anchor="middle" class="title">Redis cache</text>
+        <text x="460" y="369" text-anchor="middle" class="subtitle">Catalog · Content</text>
+
+        <path d="M216.0,142.0 Q277.5,145.3 338.0,134.0" class="arrow"/>
+        <text x="274" y="128" text-anchor="middle" class="tiny">HTTP</text>
+        <path d="M704.0,142.0 Q636.8,186.7 582.0,246.0" class="arrow arrow-amber"/>
+        <text x="650" y="185" text-anchor="middle" class="tiny">/admin</text>
+        <path d="M434.0,178.0 Q352.8,211.9 282.0,264.0" class="arrow arrow-green"/>
+        <path d="M486.0,291.0 Q542.3,303.8 600.0,303.0" class="arrow arrow-rose"/>
+        <path d="M460.0,178.0 L460.0,203.0" class="arrow arrow-violet"/>
+        <path d="M460.0,292.0 Q457.8,310.0 460.0,328.0" class="arrow arrow-violet"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">02 — Mô hình logic</div>
+    <div class="card">
+      <div class="card-title">Phân lớp phần mềm và trách nhiệm</div>
+      <svg viewBox="0 0 920 520" role="img" aria-label="Mô hình logic Fashion Store">
+        <rect x="24" y="28" width="872" height="92" class="node node-cyan" rx="8"/>
+        <text x="54" y="58" class="title">Lớp giao diện web</text>
+        <text x="54" y="82" class="subtitle">React pages · Navigation · Admin form · Zustand stores · Axios client</text>
+        <text x="54" y="101" class="tiny">Route public, route /admin, interceptor xử lý 401 và phiên đăng nhập</text>
+
+        <rect x="24" y="155" width="872" height="92" class="node node-green" rx="8"/>
+        <text x="54" y="185" class="title">Lớp API ứng dụng</text>
+        <text x="54" y="209" class="subtitle">FastAPI routers: auth, products, content, cart, wishlist, orders, admin, admin_content</text>
+        <text x="54" y="228" class="tiny">JWT Bearer token, CORS từ env, request validation bằng Pydantic, Redis cache fail-open</text>
+
+        <rect x="24" y="282" width="270" height="105" class="node node-amber" rx="8"/>
+        <text x="54" y="313" class="title">Nghiệp vụ catalog</text>
+        <text x="54" y="337" class="subtitle">catalog.py · content.py</text>
+        <text x="54" y="356" class="tiny">Serialize product, collection, content</text>
+
+        <rect x="325" y="282" width="270" height="105" class="node node-violet" rx="8"/>
+        <text x="355" y="313" class="title">Bảo mật và đơn hàng</text>
+        <text x="355" y="337" class="subtitle">security.py · order_flow.py</text>
+        <text x="355" y="356" class="tiny">JWT, hash mật khẩu, timeline đơn</text>
+
+        <rect x="626" y="282" width="270" height="105" class="node node-rose" rx="8"/>
+        <text x="656" y="313" class="title">Media service</text>
+        <text x="656" y="337" class="subtitle">storage.py</text>
+        <text x="656" y="356" class="tiny">Upload, list, delete, build URL MinIO</text>
+
+        <rect x="24" y="422" width="420" height="72" class="node" rx="8"/>
+        <text x="54" y="452" class="title">MongoDB</text>
+        <text x="54" y="474" class="subtitle">users, products, collections, content, carts, wishlists, orders</text>
+
+        <rect x="476" y="422" width="420" height="72" class="node node-rose" rx="8"/>
+        <text x="506" y="452" class="title">MinIO</text>
+        <text x="506" y="474" class="subtitle">Bucket fashion-store-assets · prefix products/</text>
+
+        <rect x="325" y="322" width="270" height="52" class="node node-violet" rx="8"/>
+        <text x="355" y="344" class="title">Redis cache</text>
+        <text x="355" y="362" class="tiny">cache.py · products/collections/content TTL</text>
+
+        <path d="M460.0,121.0 Q458.1,137.0 460.0,153.0" class="arrow"/>
+        <text x="476" y="142" class="tiny">/api</text>
+        <path d="M240.0,248.0 Q198.1,259.2 160.0,280.0" class="arrow arrow-amber"/>
+        <path d="M460.0,248.0 Q458.1,264.0 460.0,280.0" class="arrow arrow-violet"/>
+        <path d="M680.0,248.0 Q718.1,268.8 760.0,280.0" class="arrow arrow-rose"/>
+        <path d="M160.0,388.0 Q183.1,407.0 210.0,420.0" class="arrow arrow-green"/>
+        <path d="M460.0,388.0 Q358.1,392.2 260.0,420.0" class="arrow arrow-green"/>
+        <path d="M760.0,388.0 Q723.1,399.8 690.0,420.0" class="arrow arrow-rose"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">03 — Mô hình vật lý local</div>
+    <div class="card">
+      <div class="card-title">Docker Compose topology</div>
+      <svg viewBox="0 0 940 520" role="img" aria-label="Mô hình vật lý local Docker Compose">
+        <rect x="12" y="12" width="916" height="486" class="zone" rx="8"/>
+        <text x="36" y="34" class="zone-label">Máy developer · localhost</text>
+        <rect x="34" y="58" width="872" height="405" class="zone" rx="8"/>
+        <text x="58" y="80" class="zone-label">Docker network: fashion_network</text>
+
+        <rect x="72" y="122" width="185" height="130" class="node node-cyan" rx="8"/>
+        <text x="164" y="154" text-anchor="middle" class="title">frontend</text>
+        <text x="164" y="178" text-anchor="middle" class="subtitle">fashion_store_frontend</text>
+        <text x="164" y="198" text-anchor="middle" class="subtitle">Vite build + preview</text>
+        <text x="164" y="218" text-anchor="middle" class="tiny">host: 5173</text>
+        <text x="164" y="236" text-anchor="middle" class="tiny">./frontend:/app</text>
+
+        <rect x="377" y="122" width="185" height="130" class="node node-green" rx="8"/>
+        <text x="469" y="154" text-anchor="middle" class="title">backend</text>
+        <text x="469" y="178" text-anchor="middle" class="subtitle">fashion_store_backend</text>
+        <text x="469" y="198" text-anchor="middle" class="subtitle">FastAPI + reload</text>
+        <text x="469" y="218" text-anchor="middle" class="tiny">host: 8000</text>
+        <text x="469" y="236" text-anchor="middle" class="tiny">./backend:/app</text>
+
+        <rect x="680" y="90" width="185" height="130" class="node node-amber" rx="8"/>
+        <text x="772" y="122" text-anchor="middle" class="title">mongodb</text>
+        <text x="772" y="146" text-anchor="middle" class="subtitle">fashion_store_mongodb</text>
+        <text x="772" y="166" text-anchor="middle" class="subtitle">MongoDB 6.0</text>
+        <text x="772" y="186" text-anchor="middle" class="tiny">host: 27017</text>
+        <text x="772" y="204" text-anchor="middle" class="tiny">volume: mongodb_data</text>
+
+        <rect x="680" y="280" width="185" height="130" class="node node-rose" rx="8"/>
+        <text x="772" y="312" text-anchor="middle" class="title">minio</text>
+        <text x="772" y="336" text-anchor="middle" class="subtitle">fashion_store_minio</text>
+        <text x="772" y="356" text-anchor="middle" class="subtitle">S3-compatible storage</text>
+        <text x="772" y="376" text-anchor="middle" class="tiny">host: 9000 · 9001</text>
+        <text x="772" y="394" text-anchor="middle" class="tiny">volume: minio_data</text>
+
+        <rect x="377" y="310" width="185" height="82" class="node node-violet" rx="8"/>
+        <text x="469" y="340" text-anchor="middle" class="title">redis</text>
+        <text x="469" y="362" text-anchor="middle" class="subtitle">fashion_store_redis</text>
+        <text x="469" y="380" text-anchor="middle" class="tiny">volume: redis_data</text>
+
+        <rect x="72" y="310" width="185" height="74" class="node" rx="8"/>
+        <text x="164" y="340" text-anchor="middle" class="title">Trình duyệt</text>
+        <text x="164" y="362" text-anchor="middle" class="subtitle">http://localhost:5173</text>
+
+        <path d="M164.0,310.0 Q167.4,282.0 164.0,254.0" class="arrow"/>
+        <text x="181" y="284" class="tiny">HTTP</text>
+        <path d="M258.0,187.0 Q316.5,194.0 375.0,187.0" class="arrow"/>
+        <text x="316" y="176" text-anchor="middle" class="tiny">proxy /api</text>
+        <path d="M563.0,168.0 Q621.3,168.4 678.0,155.0" class="arrow arrow-amber"/>
+        <text x="622" y="145" text-anchor="middle" class="tiny">mongodb:27017</text>
+        <path d="M563.0,218.0 Q613.3,284.9 678.0,338.0" class="arrow arrow-rose"/>
+        <text x="620" y="286" text-anchor="middle" class="tiny">minio:9000</text>
+        <path d="M469.0,254.0 Q465.8,281.0 469.0,308.0" class="arrow arrow-violet"/>
+        <text x="492" y="286" class="tiny">redis:6379</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">04 — Module code</div>
+    <div class="card">
+      <div class="card-title">Frontend và API module map</div>
+      <svg viewBox="0 0 940 460" role="img" aria-label="Mô hình module code">
+        <rect x="30" y="35" width="395" height="370" class="zone" rx="8"/>
+        <text x="54" y="58" class="zone-label">frontend/src</text>
+        <rect x="62" y="92" width="145" height="72" class="node node-cyan" rx="8"/>
+        <text x="134" y="122" text-anchor="middle" class="title">App.jsx</text>
+        <text x="134" y="144" text-anchor="middle" class="subtitle">routes · guard</text>
+        <rect x="254" y="92" width="145" height="72" class="node node-cyan" rx="8"/>
+        <text x="326" y="122" text-anchor="middle" class="title">pages</text>
+        <text x="326" y="144" text-anchor="middle" class="subtitle">public · admin</text>
+        <rect x="62" y="210" width="145" height="88" class="node node-violet" rx="8"/>
+        <text x="134" y="240" text-anchor="middle" class="title">stores</text>
+        <text x="134" y="262" text-anchor="middle" class="subtitle">auth, catalog</text>
+        <text x="134" y="279" text-anchor="middle" class="subtitle">cart, wishlist</text>
+        <rect x="254" y="210" width="145" height="88" class="node node-green" rx="8"/>
+        <text x="326" y="240" text-anchor="middle" class="title">services</text>
+        <text x="326" y="262" text-anchor="middle" class="subtitle">api.js</text>
+        <text x="326" y="279" text-anchor="middle" class="subtitle">Axios + JWT</text>
+        <rect x="158" y="334" width="145" height="54" class="node" rx="8"/>
+        <text x="230" y="356" text-anchor="middle" class="title">fallback/data tools</text>
+        <text x="230" y="374" text-anchor="middle" class="subtitle">local fallback · Excel xlsx</text>
+
+        <rect x="515" y="35" width="395" height="370" class="zone" rx="8"/>
+        <text x="539" y="58" class="zone-label">backend</text>
+        <rect x="548" y="88" width="145" height="70" class="node node-green" rx="8"/>
+        <text x="620" y="118" text-anchor="middle" class="title">main.py</text>
+        <text x="620" y="140" text-anchor="middle" class="subtitle">FastAPI app</text>
+        <rect x="740" y="88" width="145" height="70" class="node node-green" rx="8"/>
+        <text x="812" y="118" text-anchor="middle" class="title">routes</text>
+        <text x="812" y="140" text-anchor="middle" class="subtitle">auth · admin · orders</text>
+        <rect x="548" y="202" width="145" height="88" class="node node-amber" rx="8"/>
+        <text x="620" y="232" text-anchor="middle" class="title">business</text>
+        <text x="620" y="254" text-anchor="middle" class="subtitle">catalog.py</text>
+        <text x="620" y="271" text-anchor="middle" class="subtitle">content · order_flow</text>
+        <rect x="740" y="202" width="145" height="88" class="node node-rose" rx="8"/>
+        <text x="812" y="232" text-anchor="middle" class="title">storage.py</text>
+        <text x="812" y="254" text-anchor="middle" class="subtitle">MinIO client</text>
+        <text x="812" y="271" text-anchor="middle" class="subtitle">upload · list · delete</text>
+        <rect x="644" y="332" width="145" height="56" class="node" rx="8"/>
+        <text x="716" y="356" text-anchor="middle" class="title">data infra</text>
+        <text x="716" y="374" text-anchor="middle" class="subtitle">database.py · cache.py · redis_client.py</text>
+
+        <path d="M207.0,128.0 Q229.5,130.7 252.0,128.0" class="arrow"/>
+        <path d="M326.0,166.0 Q323.5,187.0 326.0,208.0" class="arrow"/>
+        <path d="M207.0,254.0 Q229.5,256.7 252.0,254.0" class="arrow arrow-green"/>
+        <path d="M134.0,299.0 Q165.0,319.5 200.0,332.0" class="arrow arrow-violet"/>
+        <path d="M693.0,123.0 Q715.5,125.7 738.0,123.0" class="arrow"/>
+        <path d="M812.0,160.0 Q809.6,180.0 812.0,200.0" class="arrow arrow-rose"/>
+        <path d="M740.0,246.0 Q717.5,243.3 695.0,246.0" class="arrow arrow-amber"/>
+        <path d="M620.0,291.0 Q651.7,314.6 688.0,330.0" class="arrow arrow-green"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">05 — Mô hình dữ liệu và lưu trữ</div>
+    <div class="card">
+      <div class="card-title">MongoDB collections và MinIO bucket</div>
+      <svg viewBox="0 0 940 470" role="img" aria-label="Mô hình dữ liệu và lưu trữ">
+        <rect x="28" y="36" width="570" height="380" class="zone" rx="8"/>
+        <text x="54" y="60" class="zone-label">MongoDB database: fashion_store</text>
+        <rect x="62" y="95" width="145" height="70" class="node node-cyan" rx="8"/>
+        <text x="134" y="124" text-anchor="middle" class="title">users</text>
+        <text x="134" y="146" text-anchor="middle" class="subtitle">email · is_admin</text>
+        <rect x="256" y="95" width="145" height="70" class="node node-green" rx="8"/>
+        <text x="328" y="124" text-anchor="middle" class="title">products</text>
+        <text x="328" y="146" text-anchor="middle" class="subtitle">collections · variants · images</text>
+        <rect x="420" y="95" width="145" height="70" class="node node-green" rx="8"/>
+        <text x="492" y="124" text-anchor="middle" class="title">collections</text>
+        <text x="492" y="146" text-anchor="middle" class="subtitle">slug · title · SEO</text>
+        <rect x="62" y="218" width="145" height="70" class="node node-violet" rx="8"/>
+        <text x="134" y="247" text-anchor="middle" class="title">carts</text>
+        <text x="134" y="269" text-anchor="middle" class="subtitle">user_id · items</text>
+        <rect x="256" y="218" width="145" height="70" class="node node-violet" rx="8"/>
+        <text x="328" y="247" text-anchor="middle" class="title">wishlists</text>
+        <text x="328" y="269" text-anchor="middle" class="subtitle">user_id · items</text>
+        <rect x="420" y="218" width="145" height="70" class="node node-amber" rx="8"/>
+        <text x="492" y="247" text-anchor="middle" class="title">orders</text>
+        <text x="492" y="269" text-anchor="middle" class="subtitle">snapshots · status</text>
+        <rect x="172" y="335" width="250" height="58" class="node" rx="8"/>
+        <text x="297" y="359" text-anchor="middle" class="title">site_content</text>
+        <text x="297" y="377" text-anchor="middle" class="subtitle">key=site-content · CMS bundle</text>
+
+        <rect x="648" y="86" width="245" height="255" class="node node-rose" rx="8"/>
+        <text x="770" y="121" text-anchor="middle" class="title">MinIO bucket</text>
+        <text x="770" y="145" text-anchor="middle" class="subtitle">fashion-store-assets</text>
+        <rect x="680" y="184" width="180" height="86" class="node" rx="8"/>
+        <text x="770" y="214" text-anchor="middle" class="title">products/&lt;uuid&gt;.&lt;ext&gt;</text>
+        <text x="770" y="236" text-anchor="middle" class="subtitle">jpg · png · webp · gif</text>
+        <text x="770" y="254" text-anchor="middle" class="tiny">binary ảnh + metadata</text>
+        <text x="770" y="304" text-anchor="middle" class="tiny">product_usage_count được tính từ</text>
+        <text x="770" y="322" text-anchor="middle" class="tiny">products.coverImage và products.images</text>
+
+        <path d="M401.0,130.0 L418.0,130.0" class="arrow arrow-green"/>
+        <text x="410" y="116" text-anchor="middle" class="tiny">collectionSlug(s)</text>
+        <path d="M328.0,166.0 Q521.0,186.5 715.0,183.0" class="arrow arrow-rose"/>
+        <text x="540" y="154" text-anchor="middle" class="tiny">URL ảnh</text>
+        <path d="M134.0,166.0 Q131.0,191.0 134.0,216.0" class="arrow arrow-violet"/>
+        <path d="M134.0,166.0 Q219.0,201.6 310.0,216.0" class="arrow arrow-violet"/>
+        <path d="M134.0,166.0 Q285.1,202.8 440.0,216.0" class="arrow arrow-amber"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">06 — Luồng upload và xóa ảnh</div>
+    <div class="card">
+      <div class="card-title">Sequence diagram kho ảnh MinIO</div>
+      <svg viewBox="0 0 940 520" role="img" aria-label="Luồng upload và xóa ảnh MinIO">
+        <rect x="52" y="20" width="130" height="42" class="node node-amber" rx="8"/><text x="117" y="46" text-anchor="middle" class="title">Admin</text>
+        <rect x="238" y="20" width="150" height="42" class="node node-cyan" rx="8"/><text x="313" y="46" text-anchor="middle" class="title">Admin UI</text>
+        <rect x="462" y="20" width="150" height="42" class="node node-green" rx="8"/><text x="537" y="46" text-anchor="middle" class="title">API Admin</text>
+        <rect x="694" y="20" width="150" height="42" class="node node-rose" rx="8"/><text x="769" y="46" text-anchor="middle" class="title">MinIO</text>
+        <line x1="117" y1="62" x2="117" y2="500" class="lifeline"/>
+        <line x1="313" y1="62" x2="313" y2="500" class="lifeline"/>
+        <line x1="537" y1="62" x2="537" y2="500" class="lifeline"/>
+        <line x1="769" y1="62" x2="769" y2="500" class="lifeline"/>
+
+        <text x="36" y="103" class="tiny">1</text>
+        <path d="M117.0,100.0 Q214.0,111.6 311.0,100.0" class="arrow arrow-amber"/>
+        <text x="214" y="92" text-anchor="middle" class="subtitle">Chọn file ảnh</text>
+        <text x="410" y="143" class="tiny">2</text>
+        <path d="M313.0,140.0 Q424.0,152.0 535.0,140.0" class="arrow"/>
+        <text x="424" y="132" text-anchor="middle" class="subtitle">POST /api/admin/uploads/products</text>
+        <text x="646" y="183" class="tiny">3</text>
+        <path d="M537.0,180.0 Q652.0,192.0 767.0,180.0" class="arrow arrow-rose"/>
+        <text x="652" y="172" text-anchor="middle" class="subtitle">put_object products/&lt;uuid&gt;.&lt;ext&gt;</text>
+        <path d="M769.0,218.0 Q654.0,206.0 539.0,218.0" class="arrow arrow-rose return"/>
+        <text x="652" y="236" text-anchor="middle" class="subtitle">metadata object</text>
+        <path d="M537.0,264.0 Q426.0,252.0 315.0,264.0" class="arrow return"/>
+        <text x="424" y="256" text-anchor="middle" class="subtitle">url · object_name · size · usage_count</text>
+
+        <line x1="70" y1="300" x2="870" y2="300" stroke="#253650" stroke-width="1" stroke-dasharray="4 6"/>
+        <text x="470" y="319" text-anchor="middle" class="tiny">Xóa ảnh</text>
+
+        <text x="405" y="357" class="tiny">4</text>
+        <path d="M313.0,354.0 Q424.0,366.0 535.0,354.0" class="arrow arrow-amber"/>
+        <text x="424" y="346" text-anchor="middle" class="subtitle">DELETE ?object_name=...</text>
+        <rect x="452" y="382" width="170" height="48" class="node node-green" rx="8"/>
+        <text x="537" y="402" text-anchor="middle" class="title">Đếm usage</text>
+        <text x="537" y="420" text-anchor="middle" class="subtitle">coverImage · images</text>
+        <path d="M537.0,440.0 Q652.0,452.0 767.0,440.0" class="arrow arrow-rose"/>
+        <text x="652" y="432" text-anchor="middle" class="subtitle">remove_object nếu usage = 0</text>
+        <path d="M537.0,478.0 Q426.0,466.0 315.0,478.0" class="arrow arrow-rose return"/>
+        <text x="424" y="496" text-anchor="middle" class="subtitle">409 nếu ảnh đang được dùng</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">07 — Luồng checkout</div>
+    <div class="card">
+      <div class="card-title">Tạo đơn hàng và trừ tồn kho</div>
+      <svg viewBox="0 0 940 430" role="img" aria-label="Luồng checkout và tạo đơn hàng">
+        <rect x="40" y="70" width="150" height="70" class="node node-cyan" rx="8"/>
+        <text x="115" y="99" text-anchor="middle" class="title">Cart store</text>
+        <text x="115" y="121" text-anchor="middle" class="subtitle">guest local · user API</text>
+        <rect x="260" y="70" width="150" height="70" class="node node-cyan" rx="8"/>
+        <text x="335" y="99" text-anchor="middle" class="title">Checkout page</text>
+        <text x="335" y="121" text-anchor="middle" class="subtitle">shipping · contact</text>
+        <rect x="480" y="70" width="150" height="70" class="node node-green" rx="8"/>
+        <text x="555" y="99" text-anchor="middle" class="title">Orders API</text>
+        <text x="555" y="121" text-anchor="middle" class="subtitle">POST /api/orders</text>
+        <rect x="700" y="44" width="170" height="96" class="node node-amber" rx="8"/>
+        <text x="785" y="74" text-anchor="middle" class="title">MongoDB products</text>
+        <text x="785" y="96" text-anchor="middle" class="subtitle">variant stock</text>
+        <text x="785" y="115" text-anchor="middle" class="tiny">đọc và trừ tồn kho</text>
+        <rect x="700" y="220" width="170" height="82" class="node node-green" rx="8"/>
+        <text x="785" y="250" text-anchor="middle" class="title">MongoDB orders</text>
+        <text x="785" y="272" text-anchor="middle" class="subtitle">order snapshot</text>
+
+        <path d="M191.0,105.0 Q224.5,109.0 258.0,105.0" class="arrow"/>
+        <text x="224" y="96" text-anchor="middle" class="tiny">items</text>
+        <path d="M411.0,105.0 Q444.5,109.0 478.0,105.0" class="arrow"/>
+        <text x="444" y="96" text-anchor="middle" class="tiny">checkout payload</text>
+        <path d="M631.0,91.0 Q664.5,95.0 698.0,91.0" class="arrow arrow-amber"/>
+        <text x="664" y="78" text-anchor="middle" class="tiny">check stock</text>
+        <path d="M700 124 C650 165 645 220 700 250" class="arrow arrow-green"/>
+        <text x="632" y="188" text-anchor="middle" class="tiny">insert order</text>
+        <path d="M785 220 C770 180 770 150 785 140" class="arrow arrow-amber"/>
+        <text x="825" y="180" class="tiny">decrement</text>
+
+        <rect x="110" y="330" width="720" height="54" class="node" rx="8"/>
+        <text x="470" y="352" text-anchor="middle" class="title">Kết quả</text>
+        <text x="470" y="371" text-anchor="middle" class="subtitle">Đơn ở trạng thái pending, khách xem trong account/orders hoặc theo dõi bằng mã đơn</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">08 — Luồng xác thực và bảo vệ admin</div>
+    <div class="card">
+      <div class="card-title">JWT, route guard và xử lý phiên hết hạn</div>
+      <svg viewBox="0 0 940 470" role="img" aria-label="Luồng xác thực JWT">
+        <rect x="52" y="22" width="120" height="42" class="node node-cyan" rx="8"/><text x="112" y="48" text-anchor="middle" class="title">Browser</text>
+        <rect x="240" y="22" width="140" height="42" class="node node-cyan" rx="8"/><text x="310" y="48" text-anchor="middle" class="title">Login page</text>
+        <rect x="462" y="22" width="140" height="42" class="node node-green" rx="8"/><text x="532" y="48" text-anchor="middle" class="title">Auth API</text>
+        <rect x="724" y="22" width="120" height="42" class="node node-amber" rx="8"/><text x="784" y="48" text-anchor="middle" class="title">MongoDB</text>
+        <line x1="112" y1="64" x2="112" y2="446" class="lifeline"/>
+        <line x1="310" y1="64" x2="310" y2="446" class="lifeline"/>
+        <line x1="532" y1="64" x2="532" y2="446" class="lifeline"/>
+        <line x1="784" y1="64" x2="784" y2="446" class="lifeline"/>
+
+        <path d="M112.0,104.0 Q210.0,115.8 308.0,104.0" class="arrow"/>
+        <text x="210" y="96" text-anchor="middle" class="subtitle">Nhập username/password</text>
+        <path d="M310.0,144.0 Q420.0,156.0 530.0,144.0" class="arrow arrow-green"/>
+        <text x="420" y="136" text-anchor="middle" class="subtitle">POST /api/auth/login</text>
+        <path d="M532.0,184.0 Q657.0,196.0 782.0,184.0" class="arrow arrow-amber"/>
+        <text x="657" y="176" text-anchor="middle" class="subtitle">find user · verify password</text>
+        <path d="M784.0,220.0 Q659.0,208.0 534.0,220.0" class="arrow arrow-amber return"/>
+        <text x="657" y="238" text-anchor="middle" class="subtitle">user record</text>
+        <path d="M532.0,270.0 Q422.0,258.0 312.0,270.0" class="arrow arrow-green return"/>
+        <text x="420" y="262" text-anchor="middle" class="subtitle">JWT + user profile</text>
+        <path d="M310.0,310.0 Q212.0,298.2 114.0,310.0" class="arrow return"/>
+        <text x="210" y="302" text-anchor="middle" class="subtitle">authStore lưu token/user</text>
+
+        <line x1="70" y1="342" x2="870" y2="342" stroke="#253650" stroke-width="1" stroke-dasharray="4 6"/>
+        <text x="470" y="361" text-anchor="middle" class="tiny">Protected API request</text>
+        <path d="M112.0,392.0 Q321.0,404.0 530.0,392.0" class="arrow arrow-violet"/>
+        <text x="322" y="384" text-anchor="middle" class="subtitle">Authorization: Bearer token</text>
+        <path d="M532.0,428.0 Q323.0,416.0 114.0,428.0" class="arrow arrow-rose return"/>
+        <text x="322" y="446" text-anchor="middle" class="subtitle">401: xóa phiên và chuyển về /login?session=expired</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">09 — Topology production</div>
+    <div class="card">
+      <div class="card-title">Nginx là entrypoint public</div>
+      <svg viewBox="0 0 940 360" role="img" aria-label="Topology production với Nginx">
+        <rect x="22" y="24" width="896" height="302" class="zone" rx="8"/>
+        <text x="48" y="48" class="zone-label">docker-compose.prod.yml · Docker network nội bộ</text>
+
+        <rect x="58" y="96" width="160" height="78" class="node node-cyan" rx="8"/>
+        <text x="138" y="126" text-anchor="middle" class="title">Browser</text>
+        <text x="138" y="148" text-anchor="middle" class="subtitle">https://domain</text>
+
+        <rect x="292" y="78" width="170" height="116" class="node node-green" rx="8"/>
+        <text x="377" y="110" text-anchor="middle" class="title">nginx</text>
+        <text x="377" y="134" text-anchor="middle" class="subtitle">serve frontend dist</text>
+        <text x="377" y="154" text-anchor="middle" class="subtitle">proxy /api</text>
+        <text x="377" y="174" text-anchor="middle" class="tiny">public port 80/443</text>
+
+        <rect x="560" y="62" width="150" height="72" class="node node-green" rx="8"/>
+        <text x="635" y="91" text-anchor="middle" class="title">backend</text>
+        <text x="635" y="113" text-anchor="middle" class="subtitle">FastAPI workers</text>
+
+        <rect x="756" y="42" width="130" height="58" class="node node-amber" rx="8"/>
+        <text x="821" y="66" text-anchor="middle" class="title">MongoDB</text>
+        <text x="821" y="84" text-anchor="middle" class="tiny">no public port</text>
+
+        <rect x="756" y="132" width="130" height="58" class="node node-violet" rx="8"/>
+        <text x="821" y="156" text-anchor="middle" class="title">Redis</text>
+        <text x="821" y="174" text-anchor="middle" class="tiny">cache only</text>
+
+        <rect x="560" y="220" width="150" height="72" class="node node-rose" rx="8"/>
+        <text x="635" y="249" text-anchor="middle" class="title">MinIO</text>
+        <text x="635" y="271" text-anchor="middle" class="subtitle">assets bucket</text>
+
+        <path d="M218.0,135.0 Q254.0,139.3 290.0,135.0" class="arrow"/>
+        <text x="254" y="124" text-anchor="middle" class="tiny">HTTP/HTTPS</text>
+        <path d="M462.0,118.0 Q511.2,113.8 558.0,98.0" class="arrow arrow-green"/>
+        <text x="510" y="94" text-anchor="middle" class="tiny">/api</text>
+        <path d="M710.0,94.0 Q733.3,85.6 754.0,72.0" class="arrow arrow-amber"/>
+        <path d="M710.0,110.0 Q729.1,136.6 754.0,158.0" class="arrow arrow-violet"/>
+        <path d="M462.0,168.0 Q505.0,215.8 558.0,252.0" class="arrow arrow-rose"/>
+        <text x="508" y="228" text-anchor="middle" class="tiny">/fashion-store-assets</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title">10 — Ghi chú kiến trúc</div>
+    <div class="grid">
+      <div class="mini">
+        <h3>Quyết định đã thể hiện trong code</h3>
+        <ul>
+          <li>Admin thao tác ảnh qua API, không dùng credential MinIO ở trình duyệt.</li>
+          <li>Ảnh sản phẩm dùng prefix <code>products/</code> trong MinIO.</li>
+          <li>Xóa ảnh đang được sản phẩm tham chiếu bị chặn ở giao diện và API.</li>
+          <li>Một sản phẩm có thể thuộc nhiều collection qua <code>collectionSlugs</code>.</li>
+          <li>Redis là cache mềm cho public products/collections/categories/content; MongoDB vẫn là nguồn dữ liệu gốc.</li>
+          <li>Nginx production serve frontend static và proxy API/assets, không public MongoDB/Redis/backend.</li>
+          <li>Order item dùng snapshot để giữ lịch sử mua hàng ổn định.</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h3>Cần quyết định trước production</h3>
+        <ul>
+          <li>HTTPS trực tiếp bằng Nginx/Certbot hay đặt sau Cloudflare/CDN.</li>
+          <li>Bucket public/private, CDN hoặc signed URL cho media.</li>
+          <li>Phân quyền admin chi tiết hơn ngoài <code>is_admin</code>.</li>
+          <li>Nhật ký thao tác admin và chiến lược backup MongoDB/MinIO.</li>
+          <li>Cổng thanh toán, hoàn tiền, đối soát và webhook.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note">Chi tiết field và collection nằm ở <code>data-model.html</code>. File này tập trung vào sơ đồ kiến trúc và luồng tương tác giữa các thành phần.</div>
+  </section>
+</main>
+</body>
+</html>
