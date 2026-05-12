@@ -236,7 +236,7 @@ L | Hồng phấn | AD-HONG-L | 0</code></pre>
             <tr><td><code>slug</code></td><td>URL collection, không được trùng.</td></tr>
             <tr><td><code>sortPriority</code></td><td>Sắp xếp danh mục; số nhỏ đứng trước.</td></tr>
             <tr><td><code>description</code></td><td>Mô tả collection/hero.</td></tr>
-            <tr><td><code>featuredKeywords</code></td><td>Danh sách keyword phân tách bằng dấu phẩy, dùng để hỗ trợ fallback/infer catalog local.</td></tr>
+            <tr><td><code>featuredKeywords</code></td><td>Danh sách keyword phân tách bằng dấu phẩy, dùng để hỗ trợ storefront collections, lọc và SEO nội bộ.</td></tr>
             <tr><td><code>seoHeading</code>, <code>seoBody</code></td><td>Nội dung SEO cuối trang collection.</td></tr>
             <tr><td><code>translations.en.*</code></td><td>Bản dịch tiếng Anh cho title, description, SEO heading/body.</td></tr>
             <tr><td><code>isActive</code></td><td>Ẩn/hiện collection ngoài storefront.</td></tr>
@@ -665,8 +665,8 @@ ugc-instagram-ao-dai-hoi-an-1080x1350.webp</code></pre>
           <tr><td><code>frontend/src/pages/AdminPage.jsx</code></td><td>Toàn bộ UI, tabs, form parsing, Excel import/export, upload handlers, order handlers.</td></tr>
           <tr><td><code>frontend/src/services/index.js</code></td><td><code>adminService</code>, endpoint frontend gọi.</td></tr>
           <tr><td><code>frontend/src/services/api.js</code></td><td>Axios base URL, auth header, 401 redirect.</td></tr>
-          <tr><td><code>frontend/src/store/catalogStore.js</code></td><td>Load/upsert/delete products và collections, local fallback.</td></tr>
-          <tr><td><code>frontend/src/store/contentStore.js</code></td><td>Load/update content bundle, locale VI/EN, local fallback.</td></tr>
+          <tr><td><code>frontend/src/store/catalogStore.js</code></td><td>Load/upsert/delete products và collections, backend là nguồn dữ liệu duy nhất.</td></tr>
+          <tr><td><code>frontend/src/store/contentStore.js</code></td><td>Load/update content bundle, locale VI/EN, có fallback local cho nội dung khi backend chưa sẵn sàng.</td></tr>
           <tr><td><code>backend/routes/admin.py</code></td><td>Admin product, collection, order, upload, stats APIs.</td></tr>
           <tr><td><code>backend/routes/admin_content.py</code></td><td>Admin content get/import APIs.</td></tr>
           <tr><td><code>backend/routes/content.py</code></td><td>Public content API.</td></tr>

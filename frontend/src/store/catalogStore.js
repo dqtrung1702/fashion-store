@@ -1,62 +1,14 @@
 import { create } from 'zustand';
-import { mockProducts } from '../data/mockCatalog';
-import { collectionDefinitions } from '../data/publicContent';
 import { getProductCollectionSlugs, isPublicProduct, normalizeProducts } from '../lib/catalog';
+import { parseList, slugify, uniqueList } from '../lib/text';
 import { adminService, productsService } from '../services';
 
-const PRODUCTS_STORAGE_KEY = 'catalog-products';
-const COLLECTIONS_STORAGE_KEY = 'catalog-collections';
-const CATALOG_SEED_VERSION_KEY = 'catalog-seed-version';
-const CATALOG_SEED_VERSION = 'ao-dai-bulk-v1';
+const LEGACY_CATALOG_STORAGE_KEYS = ['catalog-products', 'catalog-collections', 'catalog-seed-version'];
 
-const slugify = (value = '') =>
-  value
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-
-const clone = (value) => JSON.parse(JSON.stringify(value));
-
-const readStorage = (key, fallbackValue) => {
-  if (typeof window === 'undefined') return fallbackValue;
-  if (window.localStorage.getItem(CATALOG_SEED_VERSION_KEY) !== CATALOG_SEED_VERSION) {
-    return fallbackValue;
-  }
-
-  const raw = window.localStorage.getItem(key);
-  if (!raw) return fallbackValue;
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    window.localStorage.removeItem(key);
-    return fallbackValue;
-  }
-};
-
-const persistStorage = (key, value) => {
+const clearLegacyCatalogStorage = () => {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(key, JSON.stringify(value));
+  LEGACY_CATALOG_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
 };
-
-const parseList = (value) => {
-  if (Array.isArray(value)) {
-    return value.map((item) => item.toString().trim()).filter(Boolean);
-  }
-
-  return value
-    .toString()
-    .split('\n')
-    .flatMap((line) => line.split(','))
-    .map((item) => item.trim())
-    .filter(Boolean);
-};
-
-const uniqueList = (items = []) => [...new Set(items.map((item) => item?.toString().trim()).filter(Boolean))];
 
 const getCollectionsBySlug = (collections = [], slugs = []) =>
   uniqueList(slugs)
@@ -102,23 +54,12 @@ const parseVariants = (value, fallbackSku = '') => {
     });
 };
 
-const buildInitialCollections = () =>
-  Object.entries(collectionDefinitions).map(([slug, definition], index) => ({
-    slug,
-    title: definition.title,
-    description: definition.description || '',
-    featuredKeywords: parseList(definition.featuredKeywords || []),
-    seoHeading: definition.seoHeading || '',
-    seoBody: definition.seoBody || '',
-    sortPriority: index + 1,
-    isActive: definition.isActive ?? true,
-  }));
-
 const normalizeCollection = (collection, fallbackPriority = 99) => ({
   id: collection?.id || '',
   slug: slugify(collection?.slug || collection?.title || `collection-${fallbackPriority}`),
   title: (collection?.title || '').trim(),
   description: (collection?.description || '').trim(),
+  image: (collection?.image || '').trim(),
   featuredKeywords: parseList(collection?.featuredKeywords || []),
   seoHeading: (collection?.seoHeading || '').trim(),
   seoBody: (collection?.seoBody || '').trim(),
@@ -135,34 +76,6 @@ const sortCollections = (collections = []) =>
     if (priorityDiff !== 0) return priorityDiff;
     return a.title.localeCompare(b.title, 'vi');
   });
-
-const inferCollectionSlug = (product, collections) => {
-  if (product?.collectionSlug) return product.collectionSlug;
-
-  const source = [
-    product?.category,
-    product?.name,
-    product?.description,
-    ...(product?.styleTags || []),
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-
-  const matchedCollection = collections.find((collection) =>
-    collection.featuredKeywords.some((keyword) => source.includes(keyword.toLowerCase()))
-  );
-
-  return matchedCollection?.slug || '';
-};
-
-const buildInitialProducts = (collections) =>
-  normalizeProducts(
-    mockProducts.map((product) => ({
-      ...product,
-      collectionSlug: inferCollectionSlug(product, collections),
-    }))
-  );
 
 const normalizeProductInput = (input, collections, existingProduct) => {
   const collectionSlugs = uniqueList([input.collectionSlug, ...parseList(input.collectionSlugs || [])]);
@@ -202,20 +115,7 @@ const normalizeProductInput = (input, collections, existingProduct) => {
   }, collections, collectionSlugs);
 };
 
-const initialCollections = sortCollections(
-  readStorage(COLLECTIONS_STORAGE_KEY, buildInitialCollections()).map((collection, index) =>
-    normalizeCollection(collection, index + 1)
-  )
-);
-const initialProducts = normalizeProducts(readStorage(PRODUCTS_STORAGE_KEY, buildInitialProducts(initialCollections)));
-
-const persistCatalog = (products, collections) => {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(CATALOG_SEED_VERSION_KEY, CATALOG_SEED_VERSION);
-  }
-  persistStorage(PRODUCTS_STORAGE_KEY, products);
-  persistStorage(COLLECTIONS_STORAGE_KEY, collections);
-};
+clearLegacyCatalogStorage();
 
 const updateLocalProducts = (products, collections, input, existingId = null) => {
   const existingProduct = products.find((product) => product.id === existingId) || null;
@@ -302,11 +202,11 @@ const updateLocalCollections = (collections, products, input, previousSlug = nul
 };
 
 const useCatalogStore = create((set, get) => ({
-  products: initialProducts,
-  collections: initialCollections,
+  products: [],
+  collections: [],
   loading: false,
   error: '',
-  source: 'local',
+  source: 'remote',
   hydrated: false,
 
   loadCatalog: async (force = false) => {
@@ -327,20 +227,32 @@ const useCatalogStore = create((set, get) => ({
       );
       const normalizedProducts = normalizeProducts(products || []);
 
-      if (normalizedCollections.length === 0) {
+      if (normalizedCollections.length === 0 && normalizedProducts.length === 0) {
         set({
+          products: [],
+          collections: [],
           loading: false,
           hydrated: true,
-          source: 'local',
-          error:
-            normalizedProducts.length > 0
-              ? 'Backend đã có product nhưng chưa có collections. Tiếp tục dùng catalog local cho đến khi collections được import.'
-              : '',
+          source: 'remote',
+          error: '',
         });
-        return { ok: true, source: 'local', empty: true };
+        return { ok: true, source: 'remote', empty: true };
       }
 
-      persistCatalog(normalizedProducts, normalizedCollections);
+      if (normalizedCollections.length === 0) {
+        set({
+          products: normalizedProducts,
+          collections: [],
+          loading: false,
+          hydrated: true,
+          source: 'remote',
+          error: normalizedProducts.length > 0
+            ? 'Backend đã có product nhưng chưa có collections. Storefront sẽ chỉ hiển thị theo dữ liệu backend hiện tại.'
+            : '',
+        });
+        return { ok: true, source: 'remote', empty: true };
+      }
+
       set({
         products: normalizedProducts,
         collections: normalizedCollections,
@@ -352,10 +264,12 @@ const useCatalogStore = create((set, get) => ({
       return { ok: true, source: 'remote' };
     } catch (error) {
       set({
+        products: [],
+        collections: [],
         loading: false,
         hydrated: true,
-        source: 'local',
-        error: error?.response?.data?.detail || 'Không thể tải catalog từ backend. Đang dùng dữ liệu local.',
+        source: 'remote',
+        error: error?.response?.data?.detail || 'Không thể tải catalog từ backend.',
       });
       return { ok: false, error: error?.response?.data?.detail || 'Không thể tải catalog từ backend.' };
     }
@@ -376,15 +290,9 @@ const useCatalogStore = create((set, get) => ({
   },
 
   upsertProduct: async (input, existingId = null) => {
-    const { products, collections, source } = get();
+    const { products, collections } = get();
     const localResult = updateLocalProducts(products, collections, input, existingId);
     if (!localResult.ok) return localResult;
-
-    if (source !== 'remote') {
-      persistCatalog(localResult.products, collections);
-      set({ products: localResult.products });
-      return { ok: true, product: localResult.product, source: 'local' };
-    }
 
     try {
       const payload = { ...localResult.product };
@@ -406,7 +314,6 @@ const useCatalogStore = create((set, get) => ({
         ? products.map((product) => (product.id === existingId ? remoteProduct : product))
         : [remoteProduct, ...products];
 
-      persistCatalog(nextProducts, collections);
       set({ products: normalizeProducts(nextProducts), error: '' });
       return { ok: true, product: remoteProduct, source: 'remote' };
     } catch (error) {
@@ -415,18 +322,11 @@ const useCatalogStore = create((set, get) => ({
   },
 
   deleteProduct: async (productId) => {
-    const { products, collections, source } = get();
+    const { products } = get();
     const nextProducts = products.filter((product) => product.id !== productId);
-
-    if (source !== 'remote') {
-      persistCatalog(nextProducts, collections);
-      set({ products: nextProducts });
-      return { ok: true, source: 'local' };
-    }
 
     try {
       await adminService.deleteProduct(productId);
-      persistCatalog(nextProducts, collections);
       set({ products: nextProducts, error: '' });
       return { ok: true, source: 'remote' };
     } catch (error) {
@@ -435,15 +335,9 @@ const useCatalogStore = create((set, get) => ({
   },
 
   upsertCollection: async (input, previousSlug = null) => {
-    const { collections, products, source } = get();
+    const { collections, products } = get();
     const localResult = updateLocalCollections(collections, products, input, previousSlug);
     if (!localResult.ok) return localResult;
-
-    if (source !== 'remote') {
-      persistCatalog(localResult.products, localResult.collections);
-      set({ collections: localResult.collections, products: localResult.products });
-      return { ok: true, collection: localResult.collection, source: 'local' };
-    }
 
     try {
       const payload = { ...localResult.collection };
@@ -477,7 +371,6 @@ const useCatalogStore = create((set, get) => ({
             )
           : products;
 
-      persistCatalog(nextProducts, nextCollections);
       set({ collections: nextCollections, products: nextProducts, error: '' });
       return { ok: true, collection: remoteCollection, source: 'remote' };
     } catch (error) {
@@ -486,7 +379,7 @@ const useCatalogStore = create((set, get) => ({
   },
 
   deleteCollection: async (slug) => {
-    const { collections, products, source } = get();
+    const { collections, products } = get();
     const linkedProducts = products.filter((product) => getProductCollectionSlugs(product).includes(slug));
 
     if (linkedProducts.length > 0) {
@@ -498,15 +391,8 @@ const useCatalogStore = create((set, get) => ({
 
     const nextCollections = collections.filter((collection) => collection.slug !== slug);
 
-    if (source !== 'remote') {
-      persistCatalog(products, nextCollections);
-      set({ collections: nextCollections });
-      return { ok: true, source: 'local' };
-    }
-
     try {
       await adminService.deleteCollection(slug);
-      persistCatalog(products, nextCollections);
       set({ collections: nextCollections, error: '' });
       return { ok: true, source: 'remote' };
     } catch (error) {
@@ -515,10 +401,8 @@ const useCatalogStore = create((set, get) => ({
   },
 
   resetCatalog: () => {
-    const collections = sortCollections(buildInitialCollections());
-    const products = buildInitialProducts(collections);
-    persistCatalog(products, collections);
-    set({ products, collections, source: 'local', hydrated: true, error: '' });
+    clearLegacyCatalogStorage();
+    set({ products: [], collections: [], source: 'remote', hydrated: true, error: '' });
   },
 }));
 
@@ -532,11 +416,6 @@ export const getCollectionLabels = (collections, slugs = []) => {
 
   return labels.length ? labels.join(', ') : 'Chưa gán danh mục';
 };
-
-export const getInitialCatalogSnapshot = () => ({
-  products: clone(buildInitialProducts(sortCollections(buildInitialCollections()))),
-  collections: clone(sortCollections(buildInitialCollections())),
-});
 
 export const getPublicProducts = (products = [], collections = []) => {
   const activeCollectionSlugs = new Set(

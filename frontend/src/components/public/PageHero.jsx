@@ -4,12 +4,12 @@ export default function PageHero({ eyebrow, title, description, image, children 
   if (image) {
     return (
       <section
-        className="relative flex min-h-[420px] items-end overflow-hidden rounded-[2rem] border border-white/60 bg-cover bg-center px-6 py-10 shadow-[0_25px_80px_rgba(166,99,91,0.11)] md:px-10 md:py-12"
+        className="relative flex min-h-[420px] items-end overflow-hidden rounded-[2rem] border border-white/55 bg-cover bg-center px-6 py-10 shadow-[0_22px_68px_rgba(166,99,91,0.09)] md:px-10 md:py-12"
         style={{
           backgroundImage: `linear-gradient(180deg, rgba(20, 24, 22, 0.12) 0%, rgba(20, 24, 22, 0.82) 100%), url(${image})`,
         }}
       >
-        <div className="relative max-w-3xl rounded-[1.5rem] bg-slate-950/25 p-5 text-white backdrop-blur-sm md:p-6">
+        <div className="relative max-w-3xl rounded-[1.5rem] border border-white/18 bg-[linear-gradient(135deg,rgba(32,38,35,0.46),rgba(115,90,77,0.24))] p-5 text-white shadow-[0_14px_32px_rgba(20,24,22,0.12)] backdrop-blur-sm md:p-6">
           {eyebrow && (
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-white/90">
               {eyebrow}
@@ -26,8 +26,8 @@ export default function PageHero({ eyebrow, title, description, image, children 
   }
 
   return (
-    <section className="relative overflow-hidden rounded-[2rem] border border-white/60 bg-white/80 px-6 py-12 shadow-[0_25px_80px_rgba(166,99,91,0.11)] backdrop-blur md:px-10 md:py-16">
-      <div className="absolute inset-0 bg-[linear-gradient(135deg,_rgba(242,215,210,0.50),_rgba(223,233,228,0.58)_45%,_rgba(244,232,199,0.38))]" />
+    <section className="relative overflow-hidden rounded-[2rem] border border-white/55 bg-[rgba(255,250,244,0.68)] px-6 py-12 shadow-[0_22px_68px_rgba(166,99,91,0.09)] backdrop-blur-sm md:px-10 md:py-16">
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,_rgba(242,215,210,0.50),_rgba(223,233,228,0.52)_45%,_rgba(244,232,199,0.38))]" />
       <div className="relative max-w-3xl">
         {eyebrow && (
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">

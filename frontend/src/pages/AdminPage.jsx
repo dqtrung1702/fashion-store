@@ -1,912 +1,65 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { formatCurrency, getProductBadges, getProductCollectionSlugs } from '../lib/catalog';
+import { formatCurrency, getProductBadges, getProductCollectionSlugs, titleize } from '../lib/catalog';
+import { parseList } from '../lib/text';
 import { adminService } from '../services';
+import {
+  Checkbox,
+  Field,
+  SelectorButton,
+  StatCard,
+  TabButton,
+  TextArea,
+  TextInput,
+} from '../features/admin/components';
+import {
+  INITIAL_COLLECTION_FORM,
+  INITIAL_EDITORIAL_FORM,
+  INITIAL_HOME_FORM,
+  INITIAL_INFO_FORM,
+  INITIAL_MERCH_FORM,
+  INITIAL_PRODUCT_FORM,
+} from '../features/admin/constants';
+import {
+  buildCollectionExportRows,
+  buildHomePayloadFromMarketingRows,
+  createCollectionTemplateWorkbook,
+  createContentWorkbook,
+  createMarketingWorkbook,
+  getWorkbookLocale,
+  getWorkbookRows,
+  getWorkbookRowsByAliases,
+  parseCollectionImportRows,
+  parseContentWorkbook,
+  parseMarketingWorkbook,
+} from '../features/admin/excel';
+import {
+  buildCollectionPayload,
+  buildHomePayload,
+  buildInfoPayload,
+  buildMerchPayload,
+  buildProductExportRows,
+  buildProductImportTemplateRows,
+  buildProductPayload,
+  buildProductPayloadsFromImportRows,
+  buildSectionControlEntries,
+  buildEditorialPayload,
+  parseVariantRows,
+  toCollectionForm,
+  toEditorialForm,
+  toHomeForm,
+  toInfoForm,
+  toMerchForm,
+  toProductForm,
+} from '../features/admin/transformers';
+import {
+  formatFileSize,
+  formatOrderStatusLabel,
+  formatPaymentMethod,
+  ORDER_STATUS_OPTIONS,
+} from '../features/admin/viewUtils';
 import useCatalogStore, { getCollectionLabels } from '../store/catalogStore';
 import useContentStore, { contentOptionEntries } from '../store/contentStore';
 import useLanguageStore from '../store/languageStore';
-
-const INITIAL_PRODUCT_FORM = {
-  slug: '',
-  sku: '',
-  status: 'active',
-  name: '',
-  description: '',
-  collectionSlug: '',
-  collectionSlugs: [],
-  price: '',
-  compareAtPrice: '',
-  coverImage: '',
-  variants: 'XS |  |  | 0\nS |  |  | 0\nM |  |  | 0\nL |  |  | 0',
-  images: '',
-  styleTags: '',
-  material: '',
-  fitNotes: '',
-  seoTitle: '',
-  seoDescription: '',
-  enName: '',
-  enDescription: '',
-  enMaterial: '',
-  enFitNotes: '',
-  enSeoTitle: '',
-  enSeoDescription: '',
-  isNew: true,
-  isBestSeller: false,
-  isOnSale: false,
-  trendingScore: '',
-};
-
-const INITIAL_COLLECTION_FORM = {
-  slug: '',
-  title: '',
-  description: '',
-  featuredKeywords: '',
-  seoHeading: '',
-  seoBody: '',
-  enTitle: '',
-  enDescription: '',
-  enSeoHeading: '',
-  enSeoBody: '',
-  sortPriority: '',
-  isActive: true,
-};
-
-const INITIAL_HOME_FORM = {
-  brandName: '',
-  announcement: '',
-  footerHeading: '',
-  footerDescription: '',
-  storeHoldDurationLabel: '',
-  backgroundImage: '',
-  heroEyebrow: '',
-  heroTitle: '',
-  heroDescription: '',
-  heroPrimaryCtaLabel: '',
-  heroPrimaryCtaTo: '',
-  heroSecondaryCtaLabel: '',
-  heroSecondaryCtaTo: '',
-  heroStats: '',
-  sectionControls: '',
-  campaignEyebrow: '',
-  campaignTitle: '',
-  campaignDescription: '',
-  campaignTo: '',
-  campaignCtaLabel: '',
-  uspItems: '',
-  occasions: '',
-  reviews: '',
-  newsletterEyebrow: '',
-  newsletterTitle: '',
-  newsletterDescription: '',
-  ugcPosts: '',
-};
-
-const HOME_SECTION_CONTROL_OPTIONS = [
-  { key: 'campaigns', label: 'Chiến dịch nổi bật', metric: 'Campaign' },
-  { key: 'newIn', label: 'Mới về', metric: 'Sản phẩm mới' },
-  { key: 'bestsellers', label: 'Bán chạy', metric: 'Sản phẩm bán chạy' },
-  { key: 'categories', label: 'Danh mục', metric: 'Điều hướng' },
-  { key: 'occasions', label: 'Theo dịp', metric: 'Landing marketing' },
-  { key: 'reviews', label: 'Đánh giá', metric: 'Social proof' },
-  { key: 'ugc', label: 'UGC', metric: 'Social content' },
-];
-
-const INITIAL_MERCH_FORM = {
-  eyebrow: '',
-  title: '',
-  description: '',
-};
-
-const INITIAL_EDITORIAL_FORM = {
-  eyebrow: '',
-  title: '',
-  description: '',
-  image: '',
-  bullets: '',
-  ctaLabel: '',
-  ctaTo: '',
-};
-
-const INITIAL_INFO_FORM = {
-  eyebrow: '',
-  title: '',
-  intro: '',
-  sections: '',
-  tableHeaders: '',
-  tableRows: '',
-  faqs: '',
-  cards: '',
-  steps: '',
-  mapTitle: '',
-  mapAddress: '',
-  mapCoordinates: '',
-  mapUrl: '',
-  mapEmbedUrl: '',
-};
-
-const parseList = (value = '') =>
-  value
-    .toString()
-    .split('\n')
-    .flatMap((line) => line.split(','))
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const parseLooseList = (value = '') =>
-  value
-    .toString()
-    .split(/\r?\n|[,;|]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-
-const uniqueList = (items = []) => [
-  ...new Set(items.map((item) => item?.toString().trim()).filter(Boolean)),
-];
-
-const slugify = (value = '') =>
-  value
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-
-const normalizeHeader = (value = '') =>
-  value
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '');
-
-const getImportCell = (row, aliases = []) => {
-  const wanted = new Set(aliases.map(normalizeHeader));
-  const foundKey = Object.keys(row).find((key) => wanted.has(normalizeHeader(key)));
-  return foundKey ? row[foundKey] : '';
-};
-
-const toBooleanImport = (value, fallback = false) => {
-  if (value === true || value === false) return value;
-  const normalized = value.toString().trim().toLowerCase();
-  if (!normalized) return fallback;
-  return ['1', 'yes', 'true', 'on', 'co', 'có', 'x', 'moi', 'mới', 'ban chay', 'bán chạy'].includes(normalized);
-};
-
-const normalizeImportedStatus = (value) => {
-  const normalized = value.toString().trim().toLowerCase();
-  return ['draft', 'nhap', 'nháp', 'an', 'ẩn', 'hide'].includes(normalized) ? 'draft' : 'active';
-};
-
-const toNumberImport = (value, fallback = 0) => {
-  const normalized = value.toString().replace(/[^\d.-]/g, '');
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : fallback;
-};
-
-const resolveImportCollectionSlugs = (value, collections = []) => {
-  const collectionLookup = new Map();
-  collections.forEach((collection) => {
-    collectionLookup.set(normalizeHeader(collection.slug), collection.slug);
-    collectionLookup.set(normalizeHeader(collection.title), collection.slug);
-  });
-
-  return [
-    ...new Set(
-      parseLooseList(value)
-        .map((entry) => collectionLookup.get(normalizeHeader(entry)) || slugify(entry))
-        .filter((slug) => collections.some((collection) => collection.slug === slug))
-    ),
-  ];
-};
-
-const buildImportedVariants = ({ variants, size, color, sku, stock }) => {
-  if (variants.toString().trim()) {
-    return variants.toString().replace(/;/g, '\n');
-  }
-
-  const normalizedStock = toNumberImport(stock);
-  return `${size || 'One Size'} | ${color || ''} | ${sku ? `${sku}-1` : ''} | ${normalizedStock}`;
-};
-
-const buildProductImportTemplateRows = (collections = []) => {
-  const firstCollection = collections[0]?.slug || 'le-hoi-tet';
-  const secondCollection = collections[1]?.slug || firstCollection;
-  const thirdCollection = collections[2]?.slug || firstCollection;
-
-  return [
-    {
-      'Tên sản phẩm': 'Áo dài mẫu lễ hội',
-      Slug: 'ao-dai-mau-le-hoi',
-      SKU: 'AD-MAU-001',
-      'Trạng thái': 'active',
-      'Danh mục': [firstCollection, secondCollection].filter(Boolean).join(', '),
-      'Giá bán': 1290000,
-      'Giá gạch': 1590000,
-      'Mô tả': 'Mô tả sản phẩm tối thiểu 10 ký tự. Có thể chỉnh lại sau khi import.',
-      'Tồn kho': 12,
-      'Kích cỡ': 'M',
-      'Màu': 'Đỏ',
-      'Biến thể': 'S | Đỏ | AD-MAU-001-S | 4\nM | Đỏ | AD-MAU-001-M | 5\nL | Đỏ | AD-MAU-001-L | 3',
-      'Chất liệu': 'Lụa',
-      'Ghi chú fit': 'Form vừa, nên chọn đúng size thường mặc.',
-      'Phong cách': 'lễ hội, tết',
-      'Ảnh cover': '',
-      'Ảnh': '',
-      'Mới': 'yes',
-      'Bán chạy': '',
-      'Giảm giá': 'yes',
-      'Điểm trending': 80,
-      'SEO title': '',
-      'SEO description': '',
-      'English name': '',
-      'English description': '',
-    },
-    {
-      'Tên sản phẩm': 'Áo dài mẫu đồng phục',
-      Slug: 'ao-dai-mau-dong-phuc',
-      SKU: 'AD-MAU-002',
-      'Trạng thái': 'active',
-      'Danh mục': secondCollection,
-      'Giá bán': 990000,
-      'Giá gạch': '',
-      'Mô tả': 'Mẫu sản phẩm thứ hai để admin điền tiếp nhiều sản phẩm trong cùng một file.',
-      'Tồn kho': 20,
-      'Kích cỡ': 'S',
-      'Màu': 'Xanh',
-      'Biến thể': '',
-      'Chất liệu': 'Gấm',
-      'Ghi chú fit': '',
-      'Phong cách': 'đồng phục, tập thể',
-      'Ảnh cover': '',
-      'Ảnh': '',
-      'Mới': 'yes',
-      'Bán chạy': 'yes',
-      'Giảm giá': '',
-      'Điểm trending': 65,
-      'SEO title': '',
-      'SEO description': '',
-      'English name': '',
-      'English description': '',
-    },
-    {
-      'Tên sản phẩm': 'Áo dài mẫu sự kiện',
-      Slug: 'ao-dai-mau-su-kien',
-      SKU: 'AD-MAU-003',
-      'Trạng thái': 'active',
-      'Danh mục': thirdCollection,
-      'Giá bán': 1190000,
-      'Giá gạch': '',
-      'Mô tả': 'Mỗi dòng là một sản phẩm. Có thể thêm bao nhiêu dòng sản phẩm tùy cần.',
-      'Tồn kho': 8,
-      'Kích cỡ': 'M',
-      'Màu': 'Trắng',
-      'Biến thể': '',
-      'Chất liệu': 'Voan',
-      'Ghi chú fit': '',
-      'Phong cách': 'sự kiện',
-      'Ảnh cover': '',
-      'Ảnh': '',
-      'Mới': '',
-      'Bán chạy': '',
-      'Giảm giá': '',
-      'Điểm trending': 50,
-      'SEO title': '',
-      'SEO description': '',
-      'English name': '',
-      'English description': '',
-    },
-  ];
-};
-
-const formatExportedVariants = (variants = []) =>
-  variants
-    .map((variant) =>
-      [
-        variant?.size || 'One Size',
-        variant?.color || '',
-        variant?.sku || '',
-        Number(variant?.stock || 0),
-      ].join(' | ')
-    )
-    .join('\n');
-
-const buildProductExportRows = (products = []) =>
-  products.map((product) => ({
-    'Tên sản phẩm': product.name || '',
-    Slug: product.slug || '',
-    SKU: product.sku || '',
-    'Trạng thái': product.status || 'active',
-    'Danh mục': getProductCollectionSlugs(product).join(', '),
-    'Giá bán': Number(product.price || 0),
-    'Giá gạch': product.compareAtPrice ?? '',
-    'Mô tả': product.description || '',
-    'Tồn kho': Number(product.stock || 0),
-    'Kích cỡ': (product.sizes || []).join(', '),
-    'Màu': (product.colors || []).join(', '),
-    'Biến thể': formatExportedVariants(product.variants || []),
-    'Chất liệu': product.material || '',
-    'Ghi chú fit': product.fitNotes || '',
-    'Phong cách': (product.styleTags || []).join(', '),
-    'Mới': product.isNew ? 'yes' : '',
-    'Bán chạy': product.isBestSeller ? 'yes' : '',
-    'Giảm giá': product.isOnSale ? 'yes' : '',
-    'Điểm trending': Number(product.trendingScore || 0),
-    'SEO title': product.seoTitle || '',
-    'SEO description': product.seoDescription || '',
-    'English name': product.translations?.en?.name || '',
-    'English description': product.translations?.en?.description || '',
-    'English material': product.translations?.en?.material || '',
-    'English fit notes': product.translations?.en?.fitNotes || '',
-    'English SEO title': product.translations?.en?.seoTitle || '',
-    'English SEO description': product.translations?.en?.seoDescription || '',
-  }));
-
-const parseLineItems = (value) =>
-  value
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-const splitPipedLine = (line, count = 2) => {
-  const parts = line.split('|').map((part) => part.trim());
-  while (parts.length < count) parts.push('');
-  return parts.slice(0, count);
-};
-
-const parseStructuredLines = (value, count, mapper) =>
-  parseLineItems(value)
-    .map((line) => splitPipedLine(line, count))
-    .map((parts, index) => mapper(parts, index))
-    .filter(Boolean);
-
-const formatList = (items = [], separator = ', ') => items.join(separator);
-
-const formatStructuredLines = (items = [], formatter) => items.map(formatter).join('\n');
-
-const parseEnabledFlag = (value = 'on') => {
-  const normalized = value.trim().toLowerCase();
-  return !['off', 'false', '0', 'no', 'hide', 'hidden', 'an', 'ẩn', 'tat', 'tắt'].includes(normalized);
-};
-
-const buildSectionControlEntries = (sectionControls = {}) =>
-  HOME_SECTION_CONTROL_OPTIONS.map((entry) => ({
-    ...entry,
-    eyebrow: sectionControls[entry.key]?.eyebrow ?? '',
-    title: sectionControls[entry.key]?.title ?? '',
-    ctaLabel: sectionControls[entry.key]?.ctaLabel ?? '',
-    ctaTo: sectionControls[entry.key]?.ctaTo ?? '',
-    enabled: sectionControls[entry.key]?.enabled !== false,
-  }));
-
-const parseVariantRows = (value) =>
-  parseStructuredLines(value, 4, ([size = '', color = '', sku = '', stock = '0'], index) => ({
-    id: `${sku || 'variant'}-${index + 1}`,
-    size: size || 'One Size',
-    color: color || '-',
-    sku: sku || '-',
-    stock: Number(stock || 0),
-  }));
-
-const toProductForm = (product) => ({
-  slug: product?.slug ?? product?.id ?? '',
-  sku: product?.sku ?? '',
-  status: product?.status ?? 'active',
-  name: product?.name ?? '',
-  description: product?.description ?? '',
-  collectionSlug: product?.collectionSlug ?? '',
-  collectionSlugs: product?.collectionSlugs?.length ? product.collectionSlugs : product?.collectionSlug ? [product.collectionSlug] : [],
-  price: product?.price?.toString() ?? '',
-  compareAtPrice: product?.compareAtPrice?.toString() ?? '',
-  coverImage: product?.coverImage ?? '',
-  variants: formatStructuredLines(
-    product?.variants ?? [],
-    (variant) => [variant.size, variant.color, variant.sku, variant.stock].join(' | ')
-  ),
-  images: (product?.images ?? []).join('\n'),
-  styleTags: formatList(product?.styleTags ?? []),
-  material: product?.material ?? '',
-  fitNotes: product?.fitNotes ?? '',
-  seoTitle: product?.seoTitle ?? '',
-  seoDescription: product?.seoDescription ?? '',
-  enName: product?.translations?.en?.name ?? '',
-  enDescription: product?.translations?.en?.description ?? '',
-  enMaterial: product?.translations?.en?.material ?? '',
-  enFitNotes: product?.translations?.en?.fitNotes ?? '',
-  enSeoTitle: product?.translations?.en?.seoTitle ?? '',
-  enSeoDescription: product?.translations?.en?.seoDescription ?? '',
-  isNew: Boolean(product?.isNew),
-  isBestSeller: Boolean(product?.isBestSeller),
-  isOnSale: Boolean(product?.isOnSale),
-  trendingScore: product?.trendingScore?.toString() ?? '',
-});
-
-const toCollectionForm = (collection) => ({
-  slug: collection?.slug ?? '',
-  title: collection?.title ?? '',
-  description: collection?.description ?? '',
-  featuredKeywords: formatList(collection?.featuredKeywords ?? []),
-  seoHeading: collection?.seoHeading ?? '',
-  seoBody: collection?.seoBody ?? '',
-  enTitle: collection?.translations?.en?.title ?? '',
-  enDescription: collection?.translations?.en?.description ?? '',
-  enSeoHeading: collection?.translations?.en?.seoHeading ?? '',
-  enSeoBody: collection?.translations?.en?.seoBody ?? '',
-  sortPriority: collection?.sortPriority?.toString() ?? '',
-  isActive: collection?.isActive ?? true,
-});
-
-const toHomeForm = (siteChrome, homePageContent) => ({
-  brandName: siteChrome?.brandName ?? '',
-  announcement: siteChrome?.announcement ?? '',
-  footerHeading: siteChrome?.footerHeading ?? '',
-  footerDescription: siteChrome?.footerDescription ?? '',
-  storeHoldDurationLabel: siteChrome?.storeHoldDurationLabel ?? '24h',
-  backgroundImage: siteChrome?.backgroundImage ?? '',
-  heroEyebrow: homePageContent?.hero?.eyebrow ?? '',
-  heroTitle: homePageContent?.hero?.title ?? '',
-  heroDescription: homePageContent?.hero?.description ?? '',
-  heroPrimaryCtaLabel: homePageContent?.hero?.primaryCtaLabel ?? '',
-  heroPrimaryCtaTo: homePageContent?.hero?.primaryCtaTo ?? '',
-  heroSecondaryCtaLabel: homePageContent?.hero?.secondaryCtaLabel ?? '',
-  heroSecondaryCtaTo: homePageContent?.hero?.secondaryCtaTo ?? '',
-  heroStats: formatStructuredLines(
-    homePageContent?.heroStats ?? [],
-    (item) => [item.label, item.value, item.detail].join(' | ')
-  ),
-  sectionControls: formatStructuredLines(
-    buildSectionControlEntries(homePageContent?.sectionControls),
-    (item) =>
-      [
-        item.key,
-        item.eyebrow,
-        item.title,
-        item.ctaLabel,
-        item.ctaTo,
-        item.enabled ? 'on' : 'off',
-      ].join(' | ')
-  ),
-  campaignEyebrow: homePageContent?.campaignBanner?.eyebrow ?? '',
-  campaignTitle: homePageContent?.campaignBanner?.title ?? '',
-  campaignDescription: homePageContent?.campaignBanner?.description ?? '',
-  campaignTo: homePageContent?.campaignBanner?.to ?? '',
-  campaignCtaLabel: homePageContent?.campaignBanner?.ctaLabel ?? '',
-  uspItems: formatStructuredLines(
-    homePageContent?.uspItems ?? [],
-    (item) => [item.title, item.detail].join(' | ')
-  ),
-  occasions: formatStructuredLines(
-    homePageContent?.occasions ?? [],
-    (item) => [item.title, item.description, item.to, item.image].join(' | ')
-  ),
-  reviews: formatStructuredLines(
-    homePageContent?.reviews ?? [],
-    (item) => [item.quote, item.name, item.meta, item.rating].join(' | ')
-  ),
-  newsletterEyebrow: homePageContent?.newsletter?.eyebrow ?? '',
-  newsletterTitle: homePageContent?.newsletter?.title ?? '',
-  newsletterDescription: homePageContent?.newsletter?.description ?? '',
-  ugcPosts: formatStructuredLines(
-    homePageContent?.ugcPosts ?? [],
-    (item) => [item.platform, item.handle, item.caption, item.image].join(' | ')
-  ),
-});
-
-const toMerchForm = (page) => ({
-  eyebrow: page?.eyebrow ?? '',
-  title: page?.title ?? '',
-  description: page?.description ?? '',
-});
-
-const toEditorialForm = (page) => ({
-  eyebrow: page?.eyebrow ?? '',
-  title: page?.title ?? '',
-  description: page?.description ?? '',
-  image: page?.image ?? '',
-  bullets: formatStructuredLines(page?.bullets ?? [], (bullet) => bullet),
-  ctaLabel: page?.cta?.label ?? '',
-  ctaTo: page?.cta?.to ?? '',
-});
-
-const toInfoForm = (page) => ({
-  eyebrow: page?.eyebrow ?? '',
-  title: page?.title ?? '',
-  intro: page?.intro ?? '',
-  sections: formatStructuredLines(page?.sections ?? [], (item) => [item.title, item.body].join(' | ')),
-  tableHeaders: (page?.table?.headers ?? []).join(', '),
-  tableRows: formatStructuredLines(page?.table?.rows ?? [], (row) => row.join(' | ')),
-  faqs: formatStructuredLines(page?.faqs ?? [], (item) => [item.question, item.answer].join(' | ')),
-  cards: formatStructuredLines(page?.cards ?? [], (item) => [item.title, item.detail, item.note].join(' | ')),
-  steps: formatStructuredLines(page?.steps ?? [], (item) => item),
-  mapTitle: page?.storeLocation?.title ?? '',
-  mapAddress: page?.storeLocation?.address ?? '',
-  mapCoordinates: page?.storeLocation?.coordinates ?? '',
-  mapUrl: page?.storeLocation?.mapUrl ?? '',
-  mapEmbedUrl: page?.storeLocation?.embedUrl ?? '',
-});
-
-const buildProductPayload = (formData) => ({
-    slug: formData.slug.trim(),
-    sku: formData.sku.trim(),
-    status: formData.status,
-    name: formData.name.trim(),
-    description: formData.description.trim(),
-    collectionSlug: (formData.collectionSlugs?.[0] || formData.collectionSlug || '').trim(),
-    collectionSlugs: formData.collectionSlugs || [],
-    price: Number(formData.price || 0),
-    compareAtPrice: formData.compareAtPrice === '' ? '' : Number(formData.compareAtPrice),
-    coverImage: formData.coverImage.trim(),
-    variants: formData.variants,
-    images: parseList(formData.images),
-    styleTags: parseList(formData.styleTags),
-    material: formData.material.trim(),
-    fitNotes: formData.fitNotes.trim(),
-    seoTitle: formData.seoTitle.trim(),
-    seoDescription: formData.seoDescription.trim(),
-    isNew: formData.isNew,
-    isBestSeller: formData.isBestSeller,
-    isOnSale: formData.isOnSale,
-    trendingScore: Number(formData.trendingScore || 0),
-    translations: {
-      en: {
-        name: formData.enName.trim(),
-        description: formData.enDescription.trim(),
-        material: formData.enMaterial.trim(),
-        fitNotes: formData.enFitNotes.trim(),
-        seoTitle: formData.enSeoTitle.trim(),
-        seoDescription: formData.enSeoDescription.trim(),
-      },
-    },
-  });
-
-const buildProductPayloadFromImportRow = (row, collections = []) => {
-  const name = getImportCell(row, ['name', 'ten san pham', 'tên sản phẩm', 'product name']);
-  const rawSlug = getImportCell(row, ['slug', 'ma slug', 'url slug']);
-  const sku = getImportCell(row, ['sku', 'ma sku', 'mã sku', 'ma san pham', 'mã sản phẩm']);
-  const description =
-    getImportCell(row, ['description', 'mo ta', 'mô tả', 'description vi']) ||
-    'Thông tin sản phẩm sẽ được bổ sung sau.';
-  const collectionValue = getImportCell(row, [
-    'collectionSlugs',
-    'collection slugs',
-    'collectionSlug',
-    'collection slug',
-    'danh muc',
-    'danh mục',
-    'categories',
-    'category',
-  ]);
-  const collectionSlugs = resolveImportCollectionSlugs(collectionValue, collections);
-  const importedSku = sku.toString().trim() || slugify(rawSlug || name).toUpperCase();
-
-  return {
-    slug: slugify(rawSlug || name || importedSku),
-    sku: importedSku,
-    status: normalizeImportedStatus(getImportCell(row, ['status', 'trang thai', 'trạng thái'])),
-    name: name.toString().trim(),
-    description: description.toString().trim(),
-    collectionSlug: collectionSlugs[0] || '',
-    collectionSlugs,
-    price: toNumberImport(getImportCell(row, ['price', 'gia', 'giá', 'gia ban', 'giá bán'])),
-    compareAtPrice:
-      getImportCell(row, ['compareAtPrice', 'compare at price', 'gia gach', 'giá gạch', 'gia niem yet']) === ''
-        ? ''
-        : toNumberImport(getImportCell(row, ['compareAtPrice', 'compare at price', 'gia gach', 'giá gạch', 'gia niem yet'])),
-    coverImage: getImportCell(row, ['coverImage', 'cover image', 'anh cover', 'ảnh cover']).toString().trim(),
-    images: parseLooseList(getImportCell(row, ['images', 'gallery', 'anh', 'ảnh'])),
-    variants: buildImportedVariants({
-      variants: getImportCell(row, ['variants', 'bien the', 'biến thể']),
-      size: getImportCell(row, ['size', 'kich co', 'kích cỡ']),
-      color: getImportCell(row, ['color', 'mau', 'màu']),
-      sku: importedSku,
-      stock: getImportCell(row, ['stock', 'ton kho', 'tồn kho', 'so luong', 'số lượng']),
-    }),
-    styleTags: parseLooseList(getImportCell(row, ['styleTags', 'style tags', 'tags', 'tag', 'phong cach', 'phong cách'])),
-    material: getImportCell(row, ['material', 'chat lieu', 'chất liệu']).toString().trim(),
-    fitNotes: getImportCell(row, ['fitNotes', 'fit notes', 'ghi chu fit', 'ghi chú fit']).toString().trim(),
-    seoTitle: getImportCell(row, ['seoTitle', 'seo title']).toString().trim(),
-    seoDescription: getImportCell(row, ['seoDescription', 'seo description']).toString().trim(),
-    isNew: toBooleanImport(getImportCell(row, ['isNew', 'new', 'moi', 'mới']), true),
-    isBestSeller: toBooleanImport(getImportCell(row, ['isBestSeller', 'best seller', 'ban chay', 'bán chạy'])),
-    isOnSale: toBooleanImport(getImportCell(row, ['isOnSale', 'sale', 'giam gia', 'giảm giá'])),
-    trendingScore: toNumberImport(getImportCell(row, ['trendingScore', 'trending score', 'diem trending'])),
-    translations: {
-      en: {
-        name: getImportCell(row, ['enName', 'english name', 'name en']).toString().trim(),
-        description: getImportCell(row, ['enDescription', 'english description', 'description en']).toString().trim(),
-        material: getImportCell(row, ['enMaterial', 'english material', 'material en']).toString().trim(),
-        fitNotes: getImportCell(row, ['enFitNotes', 'english fit notes', 'fit notes en']).toString().trim(),
-        seoTitle: getImportCell(row, ['enSeoTitle', 'english seo title', 'seo title en']).toString().trim(),
-        seoDescription: getImportCell(row, ['enSeoDescription', 'english seo description', 'seo description en']).toString().trim(),
-      },
-    },
-  };
-};
-
-const mergeImportedProductPayload = (current, incoming) => ({
-  ...current,
-  collectionSlugs: uniqueList([...current.collectionSlugs, ...incoming.collectionSlugs]),
-  collectionSlug: current.collectionSlug || incoming.collectionSlug,
-  images: uniqueList([...current.images, ...incoming.images]),
-  variants: uniqueList([current.variants, incoming.variants].join('\n').split('\n')).join('\n'),
-  styleTags: uniqueList([...current.styleTags, ...incoming.styleTags]),
-  isNew: current.isNew || incoming.isNew,
-  isBestSeller: current.isBestSeller || incoming.isBestSeller,
-  isOnSale: current.isOnSale || incoming.isOnSale,
-  trendingScore: Math.max(Number(current.trendingScore || 0), Number(incoming.trendingScore || 0)),
-  _rowNumbers: [...(current._rowNumbers || []), ...(incoming._rowNumbers || [])],
-});
-
-const buildProductPayloadsFromImportRows = (rows = [], collections = []) => {
-  const productsBySlug = new Map();
-
-  rows.forEach((row, index) => {
-    const payload = buildProductPayloadFromImportRow(row, collections);
-    payload._rowNumbers = [index + 2];
-    if (!payload.slug) return;
-
-    const current = productsBySlug.get(payload.slug);
-    productsBySlug.set(payload.slug, current ? mergeImportedProductPayload(current, payload) : payload);
-  });
-
-  return [...productsBySlug.values()];
-};
-
-const buildCollectionPayload = (formData) => ({
-  slug: formData.slug.trim(),
-  title: formData.title.trim(),
-  description: formData.description.trim(),
-  featuredKeywords: parseList(formData.featuredKeywords),
-  seoHeading: formData.seoHeading.trim(),
-  seoBody: formData.seoBody.trim(),
-  sortPriority: formData.sortPriority === '' ? '' : Number(formData.sortPriority),
-  isActive: formData.isActive,
-  translations: {
-    en: {
-      title: formData.enTitle.trim(),
-      description: formData.enDescription.trim(),
-      seoHeading: formData.enSeoHeading.trim(),
-      seoBody: formData.enSeoBody.trim(),
-    },
-  },
-});
-
-const buildHomePayload = (formData) => ({
-  siteChrome: {
-    brandName: formData.brandName.trim(),
-    announcement: formData.announcement.trim(),
-    footerHeading: formData.footerHeading.trim(),
-    footerDescription: formData.footerDescription.trim(),
-    storeHoldDurationLabel: formData.storeHoldDurationLabel.trim() || '24h',
-    backgroundImage: formData.backgroundImage.trim(),
-  },
-  homePageContent: {
-    hero: {
-      eyebrow: formData.heroEyebrow.trim(),
-      title: formData.heroTitle.trim(),
-      description: formData.heroDescription.trim(),
-      primaryCtaLabel: formData.heroPrimaryCtaLabel.trim(),
-      primaryCtaTo: formData.heroPrimaryCtaTo.trim(),
-      secondaryCtaLabel: formData.heroSecondaryCtaLabel.trim(),
-      secondaryCtaTo: formData.heroSecondaryCtaTo.trim(),
-    },
-    heroStats: parseStructuredLines(formData.heroStats, 3, ([label, value, detail]) => ({
-      label,
-      value,
-      detail,
-    })),
-    sectionControls: parseStructuredLines(
-      formData.sectionControls,
-      6,
-      ([key, eyebrow, title, ctaLabel, ctaTo, enabled]) => {
-        const sectionKey = key.trim();
-        if (!sectionKey) return null;
-        return {
-          key: sectionKey,
-          value: {
-            eyebrow,
-            title,
-            ctaLabel,
-            ctaTo,
-            enabled: parseEnabledFlag(enabled),
-          },
-        };
-      }
-    ).reduce(
-      (acc, item) => ({
-        ...acc,
-        [item.key]: item.value,
-      }),
-      {}
-    ),
-    campaignBanner: {
-      eyebrow: formData.campaignEyebrow.trim(),
-      title: formData.campaignTitle.trim(),
-      description: formData.campaignDescription.trim(),
-      to: formData.campaignTo.trim(),
-      ctaLabel: formData.campaignCtaLabel.trim(),
-    },
-    uspItems: parseStructuredLines(formData.uspItems, 2, ([title, detail]) => ({ title, detail })),
-    occasions: parseStructuredLines(formData.occasions, 4, ([title, description, to, image]) => ({
-      title,
-      description,
-      to,
-      image,
-    })),
-    reviews: parseStructuredLines(formData.reviews, 4, ([quote, name, meta, rating]) => ({
-      quote,
-      name,
-      meta,
-      rating: Number(rating || 5),
-    })),
-    newsletter: {
-      eyebrow: formData.newsletterEyebrow.trim(),
-      title: formData.newsletterTitle.trim(),
-      description: formData.newsletterDescription.trim(),
-    },
-    ugcPosts: parseStructuredLines(formData.ugcPosts, 4, ([platform, handle, caption, image]) => ({
-      platform,
-      handle,
-      caption,
-      image,
-    })),
-  },
-});
-
-const buildMerchPayload = (formData) => ({
-  eyebrow: formData.eyebrow.trim(),
-  title: formData.title.trim(),
-  description: formData.description.trim(),
-});
-
-const buildEditorialPayload = (formData) => ({
-  eyebrow: formData.eyebrow.trim(),
-  title: formData.title.trim(),
-  description: formData.description.trim(),
-  image: formData.image.trim(),
-  bullets: parseLineItems(formData.bullets),
-  cta: {
-    label: formData.ctaLabel.trim(),
-    to: formData.ctaTo.trim(),
-  },
-});
-
-const buildInfoPayload = (formData) => {
-  const tableHeaders = parseList(formData.tableHeaders);
-  const tableRows = parseStructuredLines(
-    formData.tableRows,
-    Math.max(tableHeaders.length, 1),
-    (row) => row.filter((cell, index) => index < tableHeaders.length || tableHeaders.length === 0)
-  );
-
-  const storeLocation = [
-    formData.mapTitle,
-    formData.mapAddress,
-    formData.mapCoordinates,
-    formData.mapUrl,
-    formData.mapEmbedUrl,
-  ].some((value) => value?.trim())
-    ? {
-        title: formData.mapTitle.trim(),
-        address: formData.mapAddress.trim(),
-        coordinates: formData.mapCoordinates.trim(),
-        mapUrl: formData.mapUrl.trim(),
-        embedUrl: formData.mapEmbedUrl.trim(),
-      }
-    : undefined;
-
-  return {
-    eyebrow: formData.eyebrow.trim(),
-    title: formData.title.trim(),
-    intro: formData.intro.trim(),
-    sections: parseStructuredLines(formData.sections, 2, ([title, body]) => ({ title, body })) || undefined,
-    table: tableHeaders.length
-      ? {
-          headers: tableHeaders,
-          rows: tableRows,
-        }
-      : undefined,
-    faqs: parseStructuredLines(formData.faqs, 2, ([question, answer]) => ({ question, answer })) || undefined,
-    cards: parseStructuredLines(formData.cards, 3, ([title, detail, note]) => ({ title, detail, note })) || undefined,
-    steps: parseLineItems(formData.steps) || undefined,
-    storeLocation,
-  };
-};
-
-const StatCard = ({ label, value, hint }) => (
-  <div className="rounded-[1.75rem] border border-white/70 bg-white/90 p-5 shadow-sm">
-    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{label}</p>
-    <p className="mt-4 text-3xl font-semibold text-slate-950">{value}</p>
-    <p className="mt-2 text-sm text-slate-600">{hint}</p>
-  </div>
-);
-
-const TabButton = ({ active, onClick, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`rounded-full px-5 py-3 text-sm font-semibold transition ${
-      active ? 'bg-slate-950 text-white' : 'border border-slate-300 bg-white text-slate-700'
-    }`}
-  >
-    {children}
-  </button>
-);
-
-const Field = ({ label, hint, children }) => (
-  <div className="space-y-2">
-    <div className="flex items-center justify-between gap-3">
-      <p className="text-sm font-semibold text-slate-800">{label}</p>
-      {hint ? <p className="text-xs text-slate-500">{hint}</p> : null}
-    </div>
-    {children}
-  </div>
-);
-
-const TextInput = ({ label, hint, ...props }) => (
-  <Field label={label} hint={hint}>
-    <input
-      {...props}
-      className={`w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 ${props.className || ''}`}
-    />
-  </Field>
-);
-
-const TextArea = ({ label, hint, rows = 4, ...props }) => (
-  <Field label={label} hint={hint}>
-    <textarea
-      {...props}
-      rows={rows}
-      className={`w-full rounded-3xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-500 ${props.className || ''}`}
-    />
-  </Field>
-);
-
-const Checkbox = ({ name, checked, onChange, label }) => (
-  <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-    <input type="checkbox" name={name} checked={checked} onChange={onChange} className="h-4 w-4" />
-    {label}
-  </label>
-);
-
-const SelectorButton = ({ active, onClick, children }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
-      active
-        ? 'border-slate-950 bg-slate-950 text-white'
-        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'
-    }`}
-  >
-    {children}
-  </button>
-);
-
-const ORDER_STATUS_OPTIONS = [
-  { value: 'pending', label: 'Chờ xác nhận thanh toán' },
-  { value: 'confirmed', label: 'Đã xác nhận thanh toán' },
-  { value: 'processing', label: 'Đang chuẩn bị hàng' },
-  { value: 'shipped', label: 'Đang giao hàng' },
-  { value: 'delivered', label: 'Đã giao thành công' },
-  { value: 'cancelled', label: 'Đã hủy' },
-];
-
-const formatOrderStatusLabel = (status) =>
-  ORDER_STATUS_OPTIONS.find((entry) => entry.value === status)?.label || status;
-
-const formatPaymentMethod = (paymentMethod, storeHoldDurationLabel) =>
-  paymentMethod === 'online_followup'
-    ? 'Nhận thông tin thanh toán online từ cửa hàng'
-    : paymentMethod === 'store_visit_hold'
-    ? `Giữ hàng ${storeHoldDurationLabel}, thanh toán tại cửa hàng`
-    : paymentMethod;
-
-const formatFileSize = (size = 0) => {
-  if (!size) return '0 KB';
-  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
-  return `${(size / 1024 / 1024).toFixed(1)} MB`;
-};
 
 export default function AdminPage() {
   const products = useCatalogStore((state) => state.products);
@@ -965,6 +118,12 @@ export default function AdminPage() {
   const [uploadingTarget, setUploadingTarget] = useState('');
   const [importingProducts, setImportingProducts] = useState(false);
   const [productImportSummary, setProductImportSummary] = useState(null);
+  const [importingCollections, setImportingCollections] = useState(false);
+  const [collectionImportSummary, setCollectionImportSummary] = useState(null);
+  const [importingMarketing, setImportingMarketing] = useState(false);
+  const [marketingImportSummary, setMarketingImportSummary] = useState(null);
+  const [importingContent, setImportingContent] = useState(false);
+  const [contentImportSummary, setContentImportSummary] = useState(null);
   const [imageLibrary, setImageLibrary] = useState([]);
   const [imageLibraryLoading, setImageLibraryLoading] = useState(false);
   const [imageLibraryError, setImageLibraryError] = useState('');
@@ -1199,6 +358,9 @@ export default function AdminPage() {
     setError('');
     setSuccessMessage('');
     setProductImportSummary(null);
+    setCollectionImportSummary(null);
+    setMarketingImportSummary(null);
+    setContentImportSummary(null);
   };
 
   const scrollToRef = (ref) => {
@@ -1444,14 +606,51 @@ export default function AdminPage() {
 
       const importedProducts = buildProductPayloadsFromImportRows(rows, collections);
       const productIdsBySlug = new Map(products.map((product) => [product.slug, product.id]));
+      const knownCollectionSlugs = new Set(collections.map((collection) => collection.slug));
       const summary = {
         total: rows.length,
         products: importedProducts.length,
         created: 0,
         updated: 0,
         skipped: 0,
+        autoCollections: 0,
         errors: [],
       };
+
+      for (const slug of [...new Set(importedProducts.flatMap((payload) => payload.collectionSlugs || []).filter(Boolean))]) {
+        if (knownCollectionSlugs.has(slug)) continue;
+
+        const result = await upsertCollection(
+          {
+            slug,
+            title: titleize(slug),
+            description: '',
+            image: '',
+            featuredKeywords: [],
+            seoHeading: '',
+            seoBody: '',
+            sortPriority: collections.length + summary.autoCollections + 1,
+            isActive: true,
+            translations: {
+              en: {
+                title: titleize(slug),
+                description: '',
+                seoHeading: '',
+                seoBody: '',
+              },
+            },
+          },
+          null
+        );
+
+        if (!result.ok) {
+          summary.errors.push(`Không thể tự tạo danh mục "${slug}": ${result.error}`);
+          continue;
+        }
+
+        knownCollectionSlugs.add(result.collection.slug);
+        summary.autoCollections += 1;
+      }
 
       for (const payload of importedProducts) {
         const rowLabel = `Dòng ${(payload._rowNumbers || []).join(', ')}`;
@@ -1470,7 +669,13 @@ export default function AdminPage() {
 
         if (!payload.collectionSlugs.length) {
           summary.skipped += 1;
-          summary.errors.push(`${rowLabel}: danh mục không tồn tại hoặc chưa nhập.`);
+          summary.errors.push(`${rowLabel}: danh mục chưa nhập.`);
+          continue;
+        }
+
+        if (payload.collectionSlugs.some((slug) => !knownCollectionSlugs.has(slug))) {
+          summary.skipped += 1;
+          summary.errors.push(`${rowLabel}: có danh mục chưa tạo được trên backend.`);
           continue;
         }
 
@@ -1494,7 +699,7 @@ export default function AdminPage() {
 
       setProductImportSummary(summary);
       setSuccessMessage(
-        `Import xong ${summary.products} sản phẩm từ ${summary.total} dòng: tạo ${summary.created}, cập nhật ${summary.updated}, bỏ qua ${summary.skipped}.`
+        `Import xong ${summary.products} sản phẩm từ ${summary.total} dòng: tạo ${summary.created}, cập nhật ${summary.updated}, bỏ qua ${summary.skipped}, tự tạo ${summary.autoCollections} danh mục.`
       );
       resetProductForm();
     } catch (importError) {
@@ -1614,6 +819,363 @@ export default function AdminPage() {
       setSuccessMessage(`Đã xuất ${products.length} sản phẩm ra Excel, không bao gồm ảnh.`);
     } catch (exportError) {
       setError(exportError?.message || 'Không thể xuất file Excel sản phẩm.');
+    }
+  };
+
+  const handleDownloadCollectionImportTemplate = async () => {
+    clearFeedback();
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = createCollectionTemplateWorkbook(XLSX, collections);
+      XLSX.writeFile(workbook, 'collection-import-template.xlsx');
+    } catch (templateError) {
+      setError(templateError?.message || 'Không thể tạo template Excel danh mục.');
+    }
+  };
+
+  const handleExportCollectionsToExcel = async () => {
+    clearFeedback();
+
+    if (!collections.length) {
+      setError('Chưa có danh mục nào để xuất file.');
+      return;
+    }
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.utils.book_new();
+      const collectionRows = buildCollectionExportRows(collections);
+      const collectionSheet = XLSX.utils.json_to_sheet(collectionRows);
+      collectionSheet['!cols'] = [16, 24, 28, 52, 42, 26, 28, 48, 28, 48, 28, 48, 12, 14].map((wch) => ({ wch }));
+      XLSX.utils.book_append_sheet(workbook, collectionSheet, 'Danh muc hien tai');
+      XLSX.writeFile(workbook, `collections-export-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      setSuccessMessage(`Đã xuất ${collections.length} danh mục ra Excel.`);
+    } catch (exportError) {
+      setError(exportError?.message || 'Không thể xuất Excel danh mục.');
+    }
+  };
+
+  const handleImportCollections = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    clearFeedback();
+    setImportingCollections(true);
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+      const rows = getWorkbookRowsByAliases(XLSX, workbook, ['Danh muc', 'Danh muc hien tai']);
+
+      if (!rows.length) {
+        setError('File import không có dữ liệu danh mục hợp lệ.');
+        return;
+      }
+
+      const importedCollections = parseCollectionImportRows(rows);
+      const existingBySlug = new Map(collections.map((collection) => [collection.slug, collection]));
+      const summary = {
+        total: rows.length,
+        collections: importedCollections.length,
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        errors: [],
+      };
+
+      for (const payload of importedCollections) {
+        const rowLabel = `Dòng ${(payload._rowNumbers || []).join(', ')}`;
+
+        if (!payload.title) {
+          summary.skipped += 1;
+          summary.errors.push(`${rowLabel}: thiếu tên danh mục.`);
+          continue;
+        }
+
+        if (!payload.slug) {
+          summary.skipped += 1;
+          summary.errors.push(`${rowLabel}: thiếu slug.`);
+          continue;
+        }
+
+        const previousSlug = payload._previousSlug && existingBySlug.has(payload._previousSlug)
+          ? payload._previousSlug
+          : existingBySlug.has(payload.slug)
+            ? payload.slug
+            : null;
+        const { _rowNumbers, _previousSlug, ...collectionPayload } = payload;
+        const result = await upsertCollection(collectionPayload, previousSlug);
+
+        if (!result.ok) {
+          summary.skipped += 1;
+          summary.errors.push(`${rowLabel}: ${result.error}`);
+          continue;
+        }
+
+        if (previousSlug) {
+          summary.updated += 1;
+          existingBySlug.delete(previousSlug);
+        } else {
+          summary.created += 1;
+        }
+        existingBySlug.set(result.collection.slug, result.collection);
+      }
+
+      setCollectionImportSummary(summary);
+      setSuccessMessage(
+        `Import xong ${summary.collections} danh mục từ ${summary.total} dòng: tạo ${summary.created}, cập nhật ${summary.updated}, bỏ qua ${summary.skipped}.`
+      );
+      resetCollectionForm();
+    } catch (importError) {
+      setError(importError?.message || 'Không thể đọc file Excel danh mục.');
+    } finally {
+      setImportingCollections(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDownloadMarketingTemplate = async () => {
+    clearFeedback();
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = createMarketingWorkbook(XLSX, {
+        homeForm,
+        marketingAudit,
+        marketingCtas,
+        locale: contentLocale,
+      });
+      XLSX.writeFile(workbook, `marketing-monitor-template-${contentLocale}.xlsx`);
+    } catch (templateError) {
+      setError(templateError?.message || 'Không thể tạo template Excel marketing.');
+    }
+  };
+
+  const handleExportMarketingToExcel = async () => {
+    clearFeedback();
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = createMarketingWorkbook(XLSX, {
+        homeForm,
+        marketingAudit,
+        marketingCtas,
+        locale: contentLocale,
+      });
+      XLSX.writeFile(workbook, `marketing-monitor-export-${contentLocale}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      setSuccessMessage(`Đã xuất Marketing Monitor cho locale ${contentLocale.toUpperCase()}.`);
+    } catch (exportError) {
+      setError(exportError?.message || 'Không thể xuất Excel marketing.');
+    }
+  };
+
+  const handleImportMarketing = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    clearFeedback();
+    setImportingMarketing(true);
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+      const importLocale = getWorkbookLocale(XLSX, workbook, contentLocale);
+      const rows = getWorkbookRowsByAliases(XLSX, workbook, ['Marketing Input', 'Home & Site']);
+
+      if (!rows.length) {
+        setError('File import không có dữ liệu marketing hợp lệ.');
+        return;
+      }
+
+      if (importLocale !== contentLocale) {
+        setLanguageLocale(importLocale);
+        setContentLocale(importLocale);
+      }
+
+      const payload = buildHomePayloadFromMarketingRows(rows);
+      const chromeResult = await updateSiteChrome(payload.siteChrome);
+      if (!chromeResult.ok) {
+        setError(chromeResult.error);
+        return;
+      }
+
+      const homeResult = await updateHomePageContent(payload.homePageContent);
+      if (!homeResult.ok) {
+        setError(homeResult.error);
+        return;
+      }
+
+      const importedHomeForm = parseMarketingWorkbook(rows);
+      setHomeForm(importedHomeForm);
+      setMarketingImportSummary({
+        locale: importLocale,
+        rows: rows.length,
+        updatedSections: ['siteChrome', 'homePageContent'],
+      });
+      setSuccessMessage(`Đã import Marketing Monitor cho locale ${importLocale.toUpperCase()}.`);
+    } catch (importError) {
+      setError(importError?.message || 'Không thể import file Excel marketing.');
+    } finally {
+      setImportingMarketing(false);
+      event.target.value = '';
+    }
+  };
+
+  const handleDownloadContentTemplate = async () => {
+    clearFeedback();
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = createContentWorkbook(XLSX, {
+        siteChrome,
+        homePageContent,
+        merchandisingPages,
+        editorialPages,
+        infoPages,
+        locale: contentLocale,
+        contentOptions: contentOptionEntries,
+      });
+      XLSX.writeFile(workbook, `content-template-${contentLocale}.xlsx`);
+    } catch (templateError) {
+      setError(templateError?.message || 'Không thể tạo template Excel nội dung.');
+    }
+  };
+
+  const handleExportContentToExcel = async () => {
+    clearFeedback();
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = createContentWorkbook(XLSX, {
+        siteChrome,
+        homePageContent,
+        merchandisingPages,
+        editorialPages,
+        infoPages,
+        locale: contentLocale,
+        contentOptions: contentOptionEntries,
+      });
+      XLSX.writeFile(workbook, `content-export-${contentLocale}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      setSuccessMessage(`Đã xuất toàn bộ content cho locale ${contentLocale.toUpperCase()}.`);
+    } catch (exportError) {
+      setError(exportError?.message || 'Không thể xuất Excel nội dung.');
+    }
+  };
+
+  const handleImportContent = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    clearFeedback();
+    setImportingContent(true);
+
+    try {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: false });
+      const importLocale = getWorkbookLocale(XLSX, workbook, contentLocale);
+      const homeRows = getWorkbookRowsByAliases(XLSX, workbook, ['Home & Site', 'Marketing Input']);
+      const merchandisingRows = getWorkbookRowsByAliases(XLSX, workbook, ['Merchandising']);
+      const editorialRows = getWorkbookRowsByAliases(XLSX, workbook, ['Editorial']);
+      const infoRows = getWorkbookRowsByAliases(XLSX, workbook, ['Info Pages']);
+
+      if (!homeRows.length) {
+        setError('File import content thiếu dữ liệu phần Home & Site.');
+        return;
+      }
+
+      const parsed = parseContentWorkbook({
+        homeRows,
+        merchandisingRows,
+        editorialRows,
+        infoRows,
+      });
+
+      if (importLocale !== contentLocale) {
+        setLanguageLocale(importLocale);
+        setContentLocale(importLocale);
+      }
+
+      const summary = {
+        locale: importLocale,
+        home: 0,
+        merchandising: 0,
+        editorial: 0,
+        info: 0,
+        skipped: 0,
+        errors: [],
+      };
+
+      const homePayload = buildHomePayload(parsed.homeForm);
+      const chromeResult = await updateSiteChrome(homePayload.siteChrome);
+      if (!chromeResult.ok) {
+        setError(chromeResult.error);
+        return;
+      }
+      const homeResult = await updateHomePageContent(homePayload.homePageContent);
+      if (!homeResult.ok) {
+        setError(homeResult.error);
+        return;
+      }
+      summary.home = 1;
+
+      for (const entry of parsed.merchandising) {
+        if (!entry.key) {
+          summary.skipped += 1;
+          summary.errors.push('Merchandising: có dòng thiếu key.');
+          continue;
+        }
+
+        const result = await updateMerchandisingPage(entry.key, entry.payload);
+        if (!result.ok) {
+          summary.skipped += 1;
+          summary.errors.push(`Merchandising ${entry.key}: ${result.error}`);
+          continue;
+        }
+        summary.merchandising += 1;
+      }
+
+      for (const entry of parsed.editorial) {
+        if (!entry.sectionKey || !entry.slug) {
+          summary.skipped += 1;
+          summary.errors.push('Editorial: có dòng thiếu section hoặc slug.');
+          continue;
+        }
+
+        const result = await updateEditorialPage(entry.sectionKey, entry.slug, entry.payload);
+        if (!result.ok) {
+          summary.skipped += 1;
+          summary.errors.push(`Editorial ${entry.sectionKey}/${entry.slug}: ${result.error}`);
+          continue;
+        }
+        summary.editorial += 1;
+      }
+
+      for (const entry of parsed.info) {
+        if (!entry.key) {
+          summary.skipped += 1;
+          summary.errors.push('Info Pages: có dòng thiếu key.');
+          continue;
+        }
+
+        const result = await updateInfoPage(entry.key, entry.payload);
+        if (!result.ok) {
+          summary.skipped += 1;
+          summary.errors.push(`Info ${entry.key}: ${result.error}`);
+          continue;
+        }
+        summary.info += 1;
+      }
+
+      setContentImportSummary(summary);
+      setSuccessMessage(
+        `Đã import content ${importLocale.toUpperCase()}: home ${summary.home}, merchandising ${summary.merchandising}, editorial ${summary.editorial}, info ${summary.info}, bỏ qua ${summary.skipped}.`
+      );
+    } catch (importError) {
+      setError(importError?.message || 'Không thể import file Excel nội dung.');
+    } finally {
+      setImportingContent(false);
+      event.target.value = '';
     }
   };
 
@@ -1755,11 +1317,12 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-8 py-8">
-      <div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Admin CMS</p>
-          <h1 className="mt-3 font-display text-4xl leading-tight text-slate-950">Marketing CMS và vận hành nội dung</h1>
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">
+      <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-black/30 px-6 py-8 shadow-sm backdrop-blur-[2px] sm:px-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/35 to-black/10" />
+        <div className="relative">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/75">Admin CMS</p>
+          <h1 className="mt-3 font-display text-4xl leading-tight text-white">Marketing CMS và vận hành nội dung</h1>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-white/90">
             Theo dõi sức khỏe landing page, điều phối campaign, cập nhật nội dung, quản lý ảnh, sản phẩm và đơn hàng tại một nơi.
           </p>
         </div>
@@ -1856,6 +1419,52 @@ export default function AdminPage() {
                 >
                   Sửa homepage
                 </button>
+              </div>
+
+              <div className="mb-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-950">Excel cho Marketing Monitor</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Dùng workbook để xuất checklist marketing hiện tại, chỉnh sheet nhập và import lại phần homepage marketing cho locale đang làm việc.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDownloadMarketingTemplate}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      Tải template
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportMarketingToExcel}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      Xuất Excel
+                    </button>
+                    <label className="inline-flex cursor-pointer items-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                      {importingMarketing ? 'Đang import...' : 'Chọn file'}
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleImportMarketing}
+                        disabled={importingMarketing}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {marketingImportSummary ? (
+                  <div className="mt-4 rounded-2xl border border-white bg-white px-4 py-3 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-950">
+                      Đã import Marketing Monitor cho locale {marketingImportSummary.locale.toUpperCase()} với {marketingImportSummary.rows} dòng dữ liệu.
+                    </p>
+                    <p className="mt-1 text-slate-500">Đã cập nhật: {marketingImportSummary.updatedSections.join(', ')}.</p>
+                  </div>
+                ) : null}
               </div>
 
               <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
@@ -2195,6 +1804,61 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+
+              <div className="mb-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-950">Excel cho toàn bộ nội dung CMS</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Workbook này bao gồm trang chủ, landing bán hàng, editorial và các trang thông tin cho locale đang chọn.
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      Import sẽ cập nhật từng sheet theo key/slug đã map sẵn. Nếu file có sheet Meta với locale khác, admin sẽ đổi locale import theo file đó.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDownloadContentTemplate}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      Tải template
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportContentToExcel}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      Xuất Excel
+                    </button>
+                    <label className="inline-flex cursor-pointer items-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                      {importingContent ? 'Đang import...' : 'Chọn file'}
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleImportContent}
+                        disabled={importingContent}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {contentImportSummary ? (
+                  <div className="mt-4 rounded-2xl border border-white bg-white px-4 py-3 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-950">
+                      Locale {contentImportSummary.locale.toUpperCase()}: home {contentImportSummary.home}, merchandising {contentImportSummary.merchandising}, editorial {contentImportSummary.editorial}, info {contentImportSummary.info}, bỏ qua {contentImportSummary.skipped}.
+                    </p>
+                    {contentImportSummary.errors.length ? (
+                      <ul className="mt-3 space-y-1 text-red-700">
+                        {contentImportSummary.errors.slice(0, 6).map((entry) => (
+                          <li key={entry}>{entry}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -2921,6 +2585,61 @@ export default function AdminPage() {
                 </button>
               </div>
 
+              <div className="mb-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-950">Import danh mục từ Excel</h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Hỗ trợ .xlsx, .xls, .csv. Có thể tạo mới hoặc cập nhật danh mục hiện có, bao gồm cả bản dịch EN và SEO text.
+                    </p>
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                      Nếu cần đổi slug của một danh mục cũ, giữ slug hiện tại ở cột "Slug cũ" và nhập slug mới ở cột "Slug".
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleDownloadCollectionImportTemplate}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      Tải template
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportCollectionsToExcel}
+                      className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
+                    >
+                      Xuất Excel
+                    </button>
+                    <label className="inline-flex cursor-pointer items-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white">
+                      {importingCollections ? 'Đang import...' : 'Chọn file'}
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        onChange={handleImportCollections}
+                        disabled={importingCollections}
+                        className="sr-only"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {collectionImportSummary ? (
+                  <div className="mt-4 rounded-2xl border border-white bg-white px-4 py-3 text-sm text-slate-700">
+                    <p className="font-semibold text-slate-950">
+                      Tổng {collectionImportSummary.total} dòng, {collectionImportSummary.collections} danh mục, tạo {collectionImportSummary.created}, cập nhật {collectionImportSummary.updated}, bỏ qua {collectionImportSummary.skipped}.
+                    </p>
+                    {collectionImportSummary.errors.length ? (
+                      <ul className="mt-3 space-y-1 text-red-700">
+                        {collectionImportSummary.errors.slice(0, 6).map((entry) => (
+                          <li key={entry}>{entry}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
               <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2">
                   <TextInput label="Tên danh mục" name="title" value={collectionForm.title} onChange={handleFormFieldChange(setCollectionForm)} required />
@@ -2930,12 +2649,27 @@ export default function AdminPage() {
 
                 <TextArea label="Mô tả" rows={4} name="description" value={collectionForm.description} onChange={handleFormFieldChange(setCollectionForm)} required />
                 <TextInput
+                  label="Ảnh nền danh mục"
+                  hint="URL ảnh dùng cho card danh mục trên homepage và các khối điều hướng theo danh mục."
+                  name="image"
+                  value={collectionForm.image}
+                  onChange={handleFormFieldChange(setCollectionForm)}
+                />
+                <TextInput
                   label="Featured keywords"
                   hint="phân tách bằng dấu phẩy"
                   name="featuredKeywords"
                   value={collectionForm.featuredKeywords}
                   onChange={handleFormFieldChange(setCollectionForm)}
                 />
+                {collectionForm.image ? (
+                  <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50">
+                    <div
+                      className="aspect-[16/7] w-full bg-cover bg-center"
+                      style={{ backgroundImage: `url("${collectionForm.image}")` }}
+                    />
+                  </div>
+                ) : null}
                 <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-6 text-slate-600">
                   Danh mục giờ chỉ giữ những field có ích thật sự cho storefront và SEO. Các text kiểu eyebrow hoặc highlight ngắn đã được bỏ để model nhẹ hơn và đỡ rườm rà khi vận hành.
                 </div>
@@ -3091,6 +2825,21 @@ export default function AdminPage() {
                 <div className="rounded-[1.75rem] border border-slate-200 p-5">
                   <h3 className="text-lg font-semibold text-slate-950">Hero</h3>
                   <div className="mt-4 space-y-4">
+                    <TextInput
+                      label="Hero image"
+                      hint="URL ảnh riêng cho hero trang chủ. Để trống thì hero sẽ dùng ảnh nền website."
+                      name="heroImage"
+                      value={homeForm.heroImage}
+                      onChange={handleFormFieldChange(setHomeForm)}
+                    />
+                    {homeForm.heroImage ? (
+                      <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50">
+                        <div
+                          className="aspect-[16/7] w-full bg-cover bg-center"
+                          style={{ backgroundImage: `url("${homeForm.heroImage}")` }}
+                        />
+                      </div>
+                    ) : null}
                     <div className="grid gap-4 md:grid-cols-2">
                       <TextInput label="Eyebrow" name="heroEyebrow" value={homeForm.heroEyebrow} onChange={handleFormFieldChange(setHomeForm)} />
                       <TextInput label="Hero title" name="heroTitle" value={homeForm.heroTitle} onChange={handleFormFieldChange(setHomeForm)} />
@@ -3179,6 +2928,18 @@ export default function AdminPage() {
                 <TextInput label="Eyebrow" name="eyebrow" value={merchForm.eyebrow} onChange={handleFormFieldChange(setMerchForm)} />
                 <TextInput label="Title" name="title" value={merchForm.title} onChange={handleFormFieldChange(setMerchForm)} />
                 <TextArea label="Description" rows={5} name="description" value={merchForm.description} onChange={handleFormFieldChange(setMerchForm)} />
+                <TextInput
+                  label="Ảnh hero"
+                  hint="URL ảnh nền cho trang landing này."
+                  name="image"
+                  value={merchForm.image}
+                  onChange={handleFormFieldChange(setMerchForm)}
+                />
+                {merchForm.image ? (
+                  <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50">
+                    <div className="aspect-[16/7] w-full bg-cover bg-center" style={{ backgroundImage: `url("${merchForm.image}")` }} />
+                  </div>
+                ) : null}
                 <button
                   type="submit"
                   className="rounded-full bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
@@ -3233,6 +2994,18 @@ export default function AdminPage() {
                 <TextInput label="Eyebrow" name="eyebrow" value={infoForm.eyebrow} onChange={handleFormFieldChange(setInfoForm)} />
                 <TextInput label="Title" name="title" value={infoForm.title} onChange={handleFormFieldChange(setInfoForm)} />
                 <TextArea label="Intro" rows={4} name="intro" value={infoForm.intro} onChange={handleFormFieldChange(setInfoForm)} />
+                <TextInput
+                  label="Ảnh hero"
+                  hint="URL ảnh nền cho phần đầu trang thông tin."
+                  name="image"
+                  value={infoForm.image}
+                  onChange={handleFormFieldChange(setInfoForm)}
+                />
+                {infoForm.image ? (
+                  <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50">
+                    <div className="aspect-[16/7] w-full bg-cover bg-center" style={{ backgroundImage: `url("${infoForm.image}")` }} />
+                  </div>
+                ) : null}
                 <TextArea label="Sections" hint="Mỗi dòng: tiêu đề | nội dung" rows={6} name="sections" value={infoForm.sections} onChange={handleFormFieldChange(setInfoForm)} />
                 <TextInput label="Table headers" hint="ngăn cách bằng dấu phẩy" name="tableHeaders" value={infoForm.tableHeaders} onChange={handleFormFieldChange(setInfoForm)} />
                 <TextArea label="Table rows" hint="Mỗi dòng: cột 1 | cột 2 | cột 3..." rows={5} name="tableRows" value={infoForm.tableRows} onChange={handleFormFieldChange(setInfoForm)} />

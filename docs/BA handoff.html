@@ -8,7 +8,7 @@
   :root { --bg:#0b1020; --card:#121a2b; --soft:#182238; --line:#29364f; --text:#e7edf7; --muted:#98a7bd; --blue:#38bdf8; --green:#34d399; --amber:#fbbf24; --red:#fb7185; }
   * { box-sizing:border-box; }
   body { margin:0; padding:40px 22px 64px; background:var(--bg); color:var(--text); font-family:Inter,Segoe UI,Arial,sans-serif; line-height:1.6; }
-  .page { max-width:1120px; margin:0 auto; }
+  .page { max-width:1180px; margin:0 auto; }
   header { margin-bottom:34px; }
   .eyebrow { color:var(--blue); text-transform:uppercase; letter-spacing:.22em; font-size:12px; font-weight:800; }
   h1 { margin:.25rem 0 .75rem; font-size:clamp(32px,5vw,56px); line-height:1.05; }
@@ -39,9 +39,9 @@
   <header>
     <div class="eyebrow">Bàn giao nghiệp vụ</div>
     <h1>Fashion Store</h1>
-    <p>Tài liệu dành cho BA, PO, QA và đội vận hành. Nội dung phản ánh hiện trạng sau khi thêm nhiều danh mục cho sản phẩm, Excel import/export, Redis cache và cấu hình production Nginx.</p>
+    <p>Tài liệu dành cho BA, PO, QA và đội vận hành. Nội dung dưới đây phản ánh đúng hiện trạng website ở tầng storefront, account, checkout, admin CMS/catalog và media library.</p>
     <div class="pills">
-      <span class="pill">Trang bán hàng</span><span class="pill">Trang quản trị /admin</span><span class="pill">FastAPI</span><span class="pill">MongoDB</span><span class="pill">MinIO</span><span class="pill">Redis cache</span><span class="pill">Nginx production</span>
+      <span class="pill">Storefront</span><span class="pill">Account & Auth</span><span class="pill">Checkout</span><span class="pill">Admin CMS</span><span class="pill">FastAPI</span><span class="pill">MongoDB</span><span class="pill">MinIO</span><span class="pill">Redis cache</span>
     </div>
   </header>
 
@@ -49,23 +49,22 @@
   <div class="grid">
     <section class="card">
       <h3>Mục tiêu sản phẩm</h3>
-      <p>Website bán hàng thời trang có trang công khai cho khách mua hàng và trang quản trị cho đội vận hành.</p>
       <ul>
-        <li>Khách xem sản phẩm, tìm kiếm, chọn biến thể và đặt hàng.</li>
-        <li>Admin quản lý sản phẩm, danh mục, nội dung, kho ảnh và đơn hàng.</li>
-        <li>Ảnh sản phẩm lưu trong MinIO; dữ liệu nghiệp vụ lưu trong MongoDB.</li>
+        <li>Website bán áo dài với storefront công khai, khu vực tài khoản khách hàng và trang quản trị <code>/admin</code>.</li>
+        <li>Catalog hỗ trợ một sản phẩm thuộc nhiều danh mục, nhiều biến thể size/màu và nhiều trang nội dung bán hàng.</li>
+        <li>Đội vận hành quản lý sản phẩm, danh mục, nội dung song ngữ, ảnh MinIO và đơn hàng từ một màn admin duy nhất.</li>
       </ul>
     </section>
     <section class="card">
-      <h3>Trạng thái hiện tại</h3>
+      <h3>Hiện trạng quan trọng</h3>
       <ul>
-        <li>Sản phẩm, danh mục, nội dung, đơn hàng, giỏ hàng và yêu thích của người dùng đăng nhập đã được lưu trong hệ thống API/MongoDB.</li>
-        <li>Giỏ hàng và yêu thích của khách chưa đăng nhập vẫn lưu trên trình duyệt.</li>
-        <li>Một sản phẩm có thể thuộc nhiều danh mục và xuất hiện ở nhiều trang collection khác nhau.</li>
-        <li>Admin có thể tải template Excel, import hàng loạt sản phẩm và export sản phẩm hiện tại ra Excel không kèm ảnh.</li>
-        <li>Redis cache public catalog/content để tăng tốc đọc; cache tự xóa khi admin sửa catalog/content.</li>
-        <li>Thanh toán thật chưa tích hợp; checkout tạo đơn ở trạng thái chờ xác nhận.</li>
-        <li>Admin không còn nút reset dữ liệu mẫu và không còn các khối trạng thái kỹ thuật.</li>
+        <li>Storefront có song ngữ <code>VI/EN</code>; EN fallback về VI nếu field dịch chưa có dữ liệu.</li>
+        <li>Public chỉ hiển thị danh mục đang active và sản phẩm không ở trạng thái <code>draft</code>.</li>
+        <li>Cart/wishlist của guest lưu local trên trình duyệt; cart/wishlist/orders của user đăng nhập lấy từ backend.</li>
+        <li>Guest data hiện chưa tự merge vào tài khoản khi login.</li>
+        <li>Checkout tạo đơn thật trên backend, trừ tồn kho biến thể và chưa tích hợp cổng thanh toán online.</li>
+        <li>Form newsletter trên homepage mới là giao diện, chưa lưu dữ liệu.</li>
+        <li>API có hỗ trợ tìm kiếm theo từ khóa, nhưng storefront hiện chưa có màn search public riêng.</li>
       </ul>
     </section>
   </div>
@@ -74,81 +73,276 @@
   <table>
     <thead><tr><th>Vai trò</th><th>Quyền chính</th><th>Ghi chú</th></tr></thead>
     <tbody>
-      <tr><td>Khách chưa đăng nhập</td><td>Xem trang bán hàng, tìm kiếm, xem chi tiết sản phẩm, dùng giỏ hàng/yêu thích tạm, đặt hàng.</td><td>Dữ liệu giỏ hàng/yêu thích nằm trên trình duyệt.</td></tr>
-      <tr><td>Khách đã đăng nhập</td><td>Quản lý tài khoản, giỏ hàng, yêu thích, xem đơn hàng, hủy đơn khi còn được phép.</td><td>Cần phiên đăng nhập hợp lệ.</td></tr>
-      <tr><td>Admin</td><td>Quản lý sản phẩm, danh mục, nội dung, kho ảnh và đơn hàng.</td><td>Truy cập tại <code>/admin</code>.</td></tr>
+      <tr><td>Guest</td><td>Xem storefront, đổi ngôn ngữ, xem sản phẩm, lưu wishlist local, thêm giỏ local, checkout guest, tra cứu đơn bằng mã đơn.</td><td>Không cần tài khoản.</td></tr>
+      <tr><td>Khách đã đăng nhập</td><td>Đăng nhập/đăng xuất, cập nhật hồ sơ, dùng cart/wishlist trên server, xem lịch sử đơn theo tài khoản, hủy đơn khi còn cho phép.</td><td>Các route bảo vệ gồm <code>/account</code>, <code>/orders</code>, <code>/checkout</code>, <code>/admin</code>.</td></tr>
+      <tr><td>Admin</td><td>Vào <code>/admin</code>, xem thống kê, quản lý catalog, import/export Excel, quản lý nội dung VI/EN, kho ảnh MinIO và trạng thái đơn.</td><td>Phân quyền hiện tại chỉ là cờ <code>is_admin</code>.</td></tr>
     </tbody>
   </table>
 
-  <h2>3. Phạm vi trang bán hàng</h2>
+  <h2>3. Tính năng storefront hiện có</h2>
   <div class="tri">
-    <section class="card"><h3>Khám phá sản phẩm</h3><ul><li>Trang chủ</li><li>Trang danh mục</li><li>Tìm kiếm</li><li>Mới về, bán chạy, giảm giá</li><li>Chiến dịch, lookbook, dịp sử dụng</li></ul></section>
-    <section class="card"><h3>Chi tiết sản phẩm</h3><ul><li>Ảnh đại diện và thư viện ảnh</li><li>Giá bán và giá gạch</li><li>Nhãn sản phẩm</li><li>Biến thể theo size, màu, mã SKU và tồn kho</li><li>Chất liệu, ghi chú fit, tag phong cách</li></ul></section>
-    <section class="card"><h3>Trang hỗ trợ</h3><ul><li>Về thương hiệu</li><li>Hướng dẫn size</li><li>Giao hàng</li><li>Đổi trả</li><li>Câu hỏi thường gặp</li><li>Liên hệ</li><li>Theo dõi đơn</li></ul></section>
+    <section class="card">
+      <h3>Điều hướng & nhận diện</h3>
+      <ul>
+        <li>Header lấy danh mục động từ collections active.</li>
+        <li>Support navigation lấy từ content backend/localized content.</li>
+        <li>Nút đổi ngôn ngữ VI/EN áp dụng cho UI text và content.</li>
+        <li>Background website dùng ảnh cấu hình từ CMS và dùng chung cho cả VI/EN.</li>
+        <li>Footer hiển thị nhóm link nội dung và tối đa 5 danh mục active.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Khám phá sản phẩm</h3>
+      <ul>
+        <li>Homepage có hero, USP, campaign cards, mới về, bán chạy, danh mục, occasions, review, UGC.</li>
+        <li>Trang merchandising riêng cho <code>/new-in</code>, <code>/bestsellers</code>, <code>/sale</code>.</li>
+        <li>Trang collection theo slug với bộ lọc size, màu, giá, style, availability và sort.</li>
+        <li>Collection page có quick add trực tiếp vào giỏ nếu còn biến thể khả dụng.</li>
+        <li>Editorial landing pages cho <code>/campaigns</code>, <code>/lookbook</code>, <code>/occasions</code>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Mua hàng & hỗ trợ</h3>
+      <ul>
+        <li>Product detail có gallery, variant size/màu, tồn kho, wishlist, giỏ hàng và sản phẩm liên quan.</li>
+        <li>Wishlist, cart, account, orders, checkout, login, register đều đã có route thật.</li>
+        <li>Trang hỗ trợ gồm about, size guide, delivery, returns, FAQ, contact và track order.</li>
+        <li>Contact page hỗ trợ Google Maps embed/map URL cấu hình từ CMS.</li>
+        <li>Track order cho phép guest tra cứu đơn bằng mã đơn hàng.</li>
+      </ul>
+    </section>
   </div>
 
-  <h2>4. Phạm vi trang quản trị</h2>
+  <h2>4. Ma trận route public</h2>
+  <table>
+    <thead><tr><th>Route</th><th>Mục đích</th><th>Hành vi chính</th></tr></thead>
+    <tbody>
+      <tr><td><code>/</code></td><td>Homepage</td><td>Hiển thị hero, block nội dung và các nhóm sản phẩm/nội dung được điều khiển từ CMS.</td></tr>
+      <tr><td><code>/collections/:slug</code></td><td>Collection page</td><td>Lọc/sort sản phẩm theo danh mục active, cho quick add vào giỏ.</td></tr>
+      <tr><td><code>/products/:id</code></td><td>Chi tiết sản phẩm</td><td>Chọn variant, xem ảnh, thêm giỏ, lưu wishlist, xem related products; có cập nhật title/meta description.</td></tr>
+      <tr><td><code>/new-in</code>, <code>/bestsellers</code>, <code>/sale</code></td><td>Merchandising pages</td><td>Lọc theo cờ <code>isNew</code>, <code>isBestSeller</code>, <code>isOnSale</code>.</td></tr>
+      <tr><td><code>/campaigns/:slug</code>, <code>/lookbook/:slug</code>, <code>/occasions/:slug</code></td><td>Editorial landing</td><td>Đổ content từ CMS, có CTA và block gợi ý sản phẩm.</td></tr>
+      <tr><td><code>/wishlist</code></td><td>Danh sách yêu thích</td><td>Hiển thị nguồn local hoặc backend, hỗ trợ xóa toàn bộ.</td></tr>
+      <tr><td><code>/cart</code></td><td>Giỏ hàng</td><td>Đổi số lượng, xóa dòng hàng, đồng bộ tồn kho local và chuyển sang checkout.</td></tr>
+      <tr><td><code>/checkout</code></td><td>Tạo đơn</td><td>Nhập thông tin giao hàng, chọn phương thức thanh toán, gửi đơn lên backend.</td></tr>
+      <tr><td><code>/account</code></td><td>Khu vực tài khoản</td><td>Guest thấy CTA login/register; user đăng nhập có thể sửa họ tên và email.</td></tr>
+      <tr><td><code>/orders</code></td><td>Lịch sử đơn</td><td>User đăng nhập xem danh sách đơn theo tài khoản; guest chỉ xem đơn vừa đặt nếu có mã trả về.</td></tr>
+      <tr><td><code>/login</code>, <code>/register</code></td><td>Xác thực</td><td>Login bằng email hoặc username; hỗ trợ redirect theo tham số <code>next</code>.</td></tr>
+      <tr><td><code>/about</code>, <code>/size-guide</code>, <code>/delivery</code>, <code>/returns</code>, <code>/faq</code>, <code>/contact</code>, <code>/track-order</code></td><td>Nội dung hỗ trợ</td><td>Render theo cấu hình content, gồm sections/table/cards/faqs/steps tùy page.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. Luồng account, wishlist, cart và checkout</h2>
   <div class="grid">
-    <section class="card"><h3>Sản phẩm</h3><ul><li>Tạo, sửa, xóa sản phẩm.</li><li>Gắn một sản phẩm vào nhiều danh mục.</li><li>Import hàng loạt từ Excel, export danh sách sản phẩm ra Excel.</li><li>Quản lý trạng thái đang bán/nháp.</li><li>Biến thể là nguồn chính cho tồn kho, size và màu.</li><li>Chọn ảnh từ kho MinIO hoặc tải ảnh mới.</li></ul></section>
-    <section class="card"><h3>Danh mục</h3><ul><li>Tạo, sửa, xóa danh mục.</li><li>Không cho xóa danh mục nếu còn sản phẩm đang gắn.</li><li>Khi đổi slug danh mục, sản phẩm liên quan được cập nhật theo trong cả danh sách nhiều danh mục.</li></ul></section>
-    <section class="card"><h3>Nội dung</h3><ul><li>Chỉnh nội dung trang chủ.</li><li>Chỉnh ảnh nền website dùng chung VI/EN.</li><li>Chỉnh các trang bán hàng.</li><li>Chỉnh bài editorial.</li><li>Chỉnh trang thông tin và hỗ trợ.</li></ul></section>
-    <section class="card"><h3>Đơn hàng</h3><ul><li>Xem danh sách và chi tiết đơn.</li><li>Cập nhật trạng thái đơn.</li><li>Dòng thời gian theo dõi đơn tự cập nhật theo trạng thái.</li></ul></section>
+    <section class="card">
+      <h3>Auth & account</h3>
+      <ul>
+        <li>Register yêu cầu họ tên, email, username, password tối thiểu 8 ký tự.</li>
+        <li>Login chấp nhận email hoặc username.</li>
+        <li>Khi token hết hạn, frontend tự logout và redirect về login cho các route bảo vệ.</li>
+        <li>Account page gọi <code>/auth/me</code> để refresh hồ sơ và cho phép cập nhật <code>full_name</code>, <code>email</code>.</li>
+        <li>Admin user thấy shortcut vào <code>/admin</code> trên header.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Wishlist & cart</h3>
+      <ul>
+        <li>Guest dùng local storage; user đăng nhập dùng MongoDB qua API.</li>
+        <li>Wishlist là danh sách sản phẩm, không quản lý variant.</li>
+        <li>Cart quản lý theo variant id/SKU; backend và local đều chặn vượt tồn kho.</li>
+        <li>Cart local tự đồng bộ với catalog hiện tại và có thể tự giảm số lượng hoặc đánh dấu hết hàng.</li>
+        <li>Login hiện chưa có cơ chế merge cart/wishlist local sang tài khoản.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Checkout & orders</h3>
+      <ul>
+        <li>Cho phép checkout guest hoặc checkout khi đã đăng nhập.</li>
+        <li>2 phương thức thanh toán hiện có:
+          <ul>
+            <li>Nhận hướng dẫn thanh toán online từ cửa hàng.</li>
+            <li>Giữ hàng trong <code>storeHoldDurationLabel</code> rồi tới cửa hàng thanh toán trực tiếp.</li>
+          </ul>
+        </li>
+        <li>Sau khi tạo đơn, hệ thống trừ tồn kho biến thể và xóa cart backend nếu người mua đã đăng nhập.</li>
+        <li>User đăng nhập được chuyển đến <code>/orders?placed=...</code>; guest được chuyển đến <code>/track-order?order=...&amp;placed=1</code>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Theo dõi và hủy đơn</h3>
+      <ul>
+        <li>Đơn có timeline trạng thái hiển thị cả trên trang orders và track order.</li>
+        <li>Guest tra cứu theo <code>orderNumber</code>; không cần tài khoản.</li>
+        <li>User đăng nhập được hủy đơn khi trạng thái còn là <code>pending</code> hoặc <code>confirmed</code>.</li>
+        <li>Trạng thái hiện có: <code>pending</code>, <code>confirmed</code>, <code>processing</code>, <code>shipped</code>, <code>delivered</code>, <code>cancelled</code>.</li>
+      </ul>
+    </section>
   </div>
-  <div class="note ok">Màn admin hiện tập trung vào vận hành: thống kê, sản phẩm, danh mục, Excel import/export, nội dung, kho ảnh MinIO và đơn hàng.</div>
 
-  <h2>5. Kho ảnh MinIO</h2>
-  <table>
-    <thead><tr><th>Chức năng</th><th>Quy tắc nghiệp vụ</th></tr></thead>
-    <tbody>
-      <tr><td>Tải ảnh lên</td><td>Admin tải ảnh qua dịch vụ API. Dịch vụ API kiểm tra JPG/PNG/WEBP/GIF, tối đa 10 MB, rồi lưu vào thư mục <code>products/</code> trong MinIO.</td></tr>
-      <tr><td>Xem kho ảnh</td><td>Hiển thị đường dẫn ảnh, tên object, loại ảnh, dung lượng, thời gian cập nhật và số sản phẩm đang dùng ảnh.</td></tr>
-      <tr><td>Gắn ảnh vào sản phẩm</td><td>Admin có thể đặt ảnh làm ảnh đại diện hoặc thêm vào thư viện ảnh sản phẩm.</td></tr>
-      <tr><td>Chọn ảnh nền website</td><td>Admin có thể dùng ảnh từ kho MinIO làm background website; ảnh nền được lưu vào content backend và dùng chung cho VI/EN.</td></tr>
-      <tr><td>Xóa ảnh</td><td>Không cho xóa ảnh nếu đang được sản phẩm sử dụng. Dịch vụ API vẫn chặn xóa để tránh lỗi ảnh hỏng.</td></tr>
-    </tbody>
-  </table>
-
-  <h2>6. Quy tắc thương mại</h2>
-  <table>
-    <thead><tr><th>Luồng</th><th>Hành vi hiện tại</th></tr></thead>
-    <tbody>
-      <tr><td>Giỏ hàng</td><td>Người dùng đăng nhập lưu giỏ hàng trong MongoDB. Khách chưa đăng nhập lưu giỏ hàng trên trình duyệt. Hệ thống kiểm tra tồn kho theo biến thể.</td></tr>
-      <tr><td>Yêu thích</td><td>Người dùng đăng nhập lưu trong MongoDB. Khách chưa đăng nhập lưu trên trình duyệt.</td></tr>
-      <tr><td>Đặt hàng</td><td>Cho phép khách hoặc người dùng đăng nhập tạo đơn. Sau khi tạo đơn, tồn kho biến thể bị trừ.</td></tr>
-      <tr><td>Phí giao hàng</td><td>Miễn phí nếu tổng tạm tính lớn hơn 200; ngược lại phí là 18.</td></tr>
-      <tr><td>Hủy đơn</td><td>Khách chỉ hủy được đơn ở trạng thái chờ xác nhận hoặc đã xác nhận.</td></tr>
-    </tbody>
-  </table>
-
-  <h2>7. Trạng thái đơn hàng</h2>
-  <table>
-    <thead><tr><th>Mã trạng thái</th><th>Nhãn hiển thị</th><th>Ý nghĩa</th></tr></thead>
-    <tbody>
-      <tr><td><code>pending</code></td><td>Chờ xác nhận thanh toán</td><td>Đơn mới tạo.</td></tr>
-      <tr><td><code>confirmed</code></td><td>Đã xác nhận thanh toán</td><td>Admin đã xác nhận thanh toán.</td></tr>
-      <tr><td><code>processing</code></td><td>Đang chuẩn bị hàng</td><td>Đơn đang được chuẩn bị.</td></tr>
-      <tr><td><code>shipped</code></td><td>Đang giao hàng</td><td>Đơn đã giao cho đơn vị vận chuyển.</td></tr>
-      <tr><td><code>delivered</code></td><td>Đã giao thành công</td><td>Đơn hoàn tất.</td></tr>
-      <tr><td><code>cancelled</code></td><td>Đã hủy</td><td>Đơn bị hủy.</td></tr>
-    </tbody>
-  </table>
-
-  <h2>8. Danh sách kiểm thử BA/QA</h2>
+  <h2>6. Phạm vi admin hiện có</h2>
   <div class="grid">
-    <section class="card"><h3>Trang bán hàng</h3><ul><li>Các trang public hiển thị đúng.</li><li>Sản phẩm nháp không hiển thị ngoài public.</li><li>Không cho thêm quá tồn kho.</li><li>Checkout trừ tồn kho.</li><li>Theo dõi đơn bằng mã đơn.</li></ul></section>
-    <section class="card"><h3>Trang quản trị</h3><ul><li>Admin đăng nhập được vào <code>/admin</code>.</li><li>Tạo sản phẩm có biến thể, nhiều danh mục và ảnh.</li><li>Import nhiều sản phẩm từ Excel và export danh sách hiện tại.</li><li>Không xóa danh mục còn sản phẩm.</li><li>Không xóa ảnh đang được sản phẩm dùng.</li><li>Đổi trạng thái đơn cập nhật dòng thời gian.</li></ul></section>
+    <section class="card">
+      <h3>Dashboard</h3>
+      <ul>
+        <li>Hiển thị thống kê tổng sản phẩm, danh mục, người dùng, đơn hàng, doanh thu.</li>
+        <li>Frontend còn hiển thị thêm chỉ số derived như active products và draft products.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Sản phẩm</h3>
+      <ul>
+        <li>Tạo, sửa, xóa sản phẩm; quản lý slug, giá, ảnh, tags, SEO, flags merchandising.</li>
+        <li>Một sản phẩm có thể thuộc nhiều danh mục; danh mục đầu tiên là danh mục chính cho dữ liệu legacy.</li>
+        <li>Biến thể là nguồn chính cho size, màu, SKU và tồn kho.</li>
+        <li>Hỗ trợ nội dung dịch cho storefront EN ở tầng product.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Danh mục</h3>
+      <ul>
+        <li>Tạo, sửa, xóa collection storefront.</li>
+        <li>Collection có title, description, featured keywords, SEO copy, sort priority, active flag và translations.</li>
+        <li>Đổi slug/title sẽ cập nhật lại metadata danh mục trên các sản phẩm liên quan.</li>
+        <li>Không cho xóa collection nếu vẫn còn sản phẩm đang liên kết.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Import/export catalog</h3>
+      <ul>
+        <li>Download template Excel.</li>
+        <li>Import <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code> cho collections và products.</li>
+        <li>Nếu nhiều dòng trùng slug, frontend admin gộp thành một sản phẩm và cộng thêm biến thể trước khi gửi API.</li>
+        <li>Export danh sách sản phẩm hiện tại ra Excel, không kèm file ảnh.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Nội dung CMS</h3>
+      <ul>
+        <li>Quản lý content VI/EN cho homepage, merchandising pages, editorial pages và info pages.</li>
+        <li>Homepage có các block bật/tắt được như campaigns, new-in, bestsellers, categories, occasions, reviews, UGC.</li>
+        <li>Ảnh nền website là field global, dùng chung giữa VI/EN.</li>
+        <li>Info pages hỗ trợ sections, FAQ, cards, table, steps và thông tin map/contact.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Kho ảnh MinIO & đơn hàng</h3>
+      <ul>
+        <li>Upload ảnh JPG/PNG/WEBP/GIF tối đa 10 MB vào thư mục <code>products/</code>.</li>
+        <li>Xem thư viện ảnh, usage count, chọn ảnh cho cover/gallery/background.</li>
+        <li>Không cho xóa ảnh đang được sản phẩm sử dụng.</li>
+        <li>Admin xem toàn bộ đơn và cập nhật trạng thái đơn để đổi timeline tracking.</li>
+      </ul>
+    </section>
   </div>
 
-  <h2>9. Các quyết định còn mở</h2>
+  <div class="note ok">Excel import/export hiện là công cụ bulk update catalog chính cho đội vận hành. Hành vi thực tế không chỉ là đọc file và tạo sản phẩm, mà còn có logic sinh slug, gộp nhiều dòng cùng slug và fallback biến thể.</div>
+
+  <table>
+    <thead><tr><th>Nhóm</th><th>Chi tiết nghiệp vụ Excel</th></tr></thead>
+    <tbody>
+      <tr><td>File hỗ trợ</td><td>Admin import được <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code>. Hệ thống đọc sheet đầu tiên của file.</td></tr>
+      <tr><td>Template</td><td>Nút tải template sinh ra 3 sheet: <code>San pham</code>, <code>Danh muc tham khao</code>, <code>Huong dan</code>.</td></tr>
+      <tr><td>Cột bắt buộc ở góc nhìn vận hành</td><td>Tối thiểu cần có <code>Tên sản phẩm</code>, <code>Danh mục</code>, <code>Giá bán</code>. Nếu thiếu tên hoặc danh mục không map được sang collection đang tồn tại thì dòng đó bị bỏ qua.</td></tr>
+      <tr><td>Header alias</td><td>Import chấp nhận nhiều alias Việt/Anh cho cùng một field, ví dụ <code>Tên sản phẩm</code>/<code>Product name</code>, <code>Danh mục</code>/<code>category</code>, <code>Giá bán</code>/<code>price</code>, <code>Biến thể</code>/<code>variants</code>.</td></tr>
+      <tr><td>Slug và SKU</td><td>Nếu không nhập slug, hệ thống tự sinh slug từ slug thô hoặc tên sản phẩm. Nếu không nhập SKU, hệ thống dùng slug/tên để sinh SKU chữ in hoa.</td></tr>
+      <tr><td>Danh mục</td><td>Cột <code>Danh mục</code> cho phép nhập slug hoặc tên danh mục. Có thể nhập nhiều danh mục, ngăn cách bằng dấu phẩy. Chỉ những danh mục đã tồn tại trong hệ thống mới được nhận.</td></tr>
+      <tr><td>Biến thể</td><td>Nếu có cột <code>Biến thể</code>, mỗi dòng biến thể theo format <code>Size | Màu | SKU | Tồn kho</code>, nhiều biến thể ngăn cách bằng xuống dòng. Nếu bỏ trống cột này, hệ thống tự tạo 1 biến thể mặc định từ <code>Kích cỡ</code>, <code>Màu</code>, <code>Tồn kho</code>.</td></tr>
+      <tr><td>Ảnh</td><td><code>Ảnh cover</code> nhận 1 URL. Cột <code>Ảnh</code> nhận nhiều URL, có thể phân tách bằng dấu phẩy, chấm phẩy, dấu <code>|</code> hoặc xuống dòng. File Excel không upload binary image, chỉ nhận text URL.</td></tr>
+      <tr><td>Boolean flags</td><td>Các cột <code>Mới</code>, <code>Bán chạy</code>, <code>Giảm giá</code> nhận các giá trị kiểu <code>1</code>, <code>yes</code>, <code>true</code>, <code>on</code>, <code>có</code>, <code>x</code>.</td></tr>
+      <tr><td>Trạng thái</td><td>Cột <code>Trạng thái</code> map về <code>active</code> hoặc <code>draft</code>. Các giá trị như <code>draft</code>, <code>nháp</code>, <code>ẩn</code>, <code>hide</code> sẽ được hiểu là nháp; còn lại mặc định là active.</td></tr>
+      <tr><td>Dịch EN</td><td>Import hỗ trợ thêm các cột như <code>English name</code>, <code>English description</code>, <code>English material</code>, <code>English fit notes</code>, <code>English SEO title</code>, <code>English SEO description</code>.</td></tr>
+      <tr><td>Gộp nhiều dòng cùng slug</td><td>Nếu nhiều dòng có cùng slug, admin frontend sẽ gộp chúng thành một payload sản phẩm trước khi gọi API: gộp danh mục, gộp gallery images, nối danh sách biến thể, gộp style tags, giữ cờ boolean nếu có ít nhất một dòng bật, và lấy <code>trendingScore</code> lớn nhất.</td></tr>
+      <tr><td>Cập nhật sản phẩm cũ</td><td>Nếu slug import trùng với sản phẩm đã có trong hệ thống, thao tác import sẽ cập nhật sản phẩm đó thay vì tạo mới.</td></tr>
+      <tr><td>Kết quả import</td><td>Admin nhận summary gồm tổng số dòng, số sản phẩm sau gộp, số bản ghi tạo mới, số bản ghi cập nhật, số dòng bị bỏ qua và danh sách lỗi theo số dòng Excel.</td></tr>
+      <tr><td>Xuất Excel</td><td>Export sinh file sản phẩm hiện tại kèm sheet danh mục tham khảo. File export không bao gồm file ảnh nhị phân, chỉ xuất dữ liệu text như slug, giá, biến thể, tags, SEO và field EN.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7. Quy tắc nghiệp vụ hiện tại</h2>
+  <table>
+    <thead><tr><th>Nhóm</th><th>Quy tắc</th></tr></thead>
+    <tbody>
+      <tr><td>Hiển thị public</td><td>Sản phẩm <code>draft</code> bị ẩn khỏi public. Collection bị <code>isActive=false</code> không xuất hiện ở navigation/footer/public collection listing.</td></tr>
+      <tr><td>Đa danh mục</td><td>Một sản phẩm có thể thuộc nhiều collection; storefront match theo toàn bộ <code>collectionSlugs</code>.</td></tr>
+      <tr><td>Song ngữ</td><td>Locale EN chỉ ghi đè các field đã nhập; field trống fallback về dữ liệu VI mặc định/hiện có.</td></tr>
+      <tr><td>Cart guest</td><td>Giỏ local đồng bộ lại giá, tồn kho, ảnh và trạng thái available theo catalog mới mỗi khi storefront load catalog.</td></tr>
+      <tr><td>Cart account</td><td>Giỏ backend lưu theo user và theo variant. API chặn thêm/cập nhật nếu vượt tồn kho.</td></tr>
+      <tr><td>Phí vận chuyển</td><td>Miễn phí khi tạm tính từ <code>2.000.000 VND</code> trở lên; dưới ngưỡng này thu <code>30.000 VND</code>.</td></tr>
+      <tr><td>Thanh toán</td><td>Chưa có payment gateway. Trạng thái đơn mới luôn bắt đầu ở <code>pending</code>.</td></tr>
+      <tr><td>Hủy đơn</td><td>User chỉ hủy được đơn ở <code>pending</code> hoặc <code>confirmed</code>.</td></tr>
+      <tr><td>Tồn kho</td><td>Ngay khi tạo đơn thành công, hệ thống trừ stock tại biến thể đã đặt.</td></tr>
+      <tr><td>Session</td><td>Nếu API trả <code>401</code> khi người dùng đang có token, frontend tự logout và redirect login cho các route bảo vệ.</td></tr>
+      <tr><td>Media</td><td>Ảnh MinIO không được xóa nếu đang có sản phẩm tham chiếu đến cover/gallery.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8. Checklist BA/QA nên kiểm thử</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Storefront</h3>
+      <ul>
+        <li>Chuyển VI/EN đổi đúng text, content và collection title đã dịch.</li>
+        <li>Homepage ẩn/hiện đúng các block khi admin bật/tắt section controls.</li>
+        <li>Collection page lọc đúng theo size, màu, giá, style, availability và sort.</li>
+        <li>Quick add chọn đúng variant khả dụng đầu tiên và chặn vượt tồn kho.</li>
+        <li>Product detail đổi size làm đổi danh sách màu khả dụng.</li>
+        <li>Guest có thể track order bằng mã đơn từ trang <code>/track-order</code>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Auth & account</h3>
+      <ul>
+        <li>Register chặn email/username trùng.</li>
+        <li>Login bằng email hoặc username đều hoạt động.</li>
+        <li>Tham số <code>next</code> redirect đúng sau login.</li>
+        <li>Hết session ở <code>/account</code>, <code>/orders</code>, <code>/checkout</code>, <code>/admin</code> sẽ bị đẩy về login.</li>
+        <li>Update hồ sơ đổi được họ tên và email, đồng thời chặn email trùng.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Cart & checkout</h3>
+      <ul>
+        <li>Guest cart lưu local và vẫn còn sau refresh trình duyệt.</li>
+        <li>User cart lấy từ backend và bị tách biệt với local guest cart.</li>
+        <li>Cart local tự giảm quantity hoặc báo hết hàng khi catalog đổi tồn kho.</li>
+        <li>Checkout tính đúng phí ship 30.000 dưới ngưỡng 2 triệu.</li>
+        <li>Tạo đơn thành công phải trừ tồn kho variant và dọn cart backend nếu có login.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Admin</h3>
+      <ul>
+        <li>Tạo sản phẩm với nhiều collection, nhiều variant và cover/gallery ảnh.</li>
+        <li>Import Excel cập nhật được sản phẩm theo slug và export ra file đúng format.</li>
+        <li>Không xóa được collection còn sản phẩm liên kết.</li>
+        <li>Không xóa được ảnh MinIO còn usage count lớn hơn 0.</li>
+        <li>Đổi content locale VI/EN lưu đúng, frontend fallback đúng nếu EN để trống.</li>
+        <li>Đổi trạng thái đơn ở admin cập nhật ngay timeline trên orders/track order.</li>
+      </ul>
+    </section>
+  </div>
+  <div class="card">
+    <h3>Smoke test nhanh trong 10 phút</h3>
+    <ol>
+      <li>Mở homepage, collection page và product detail để xác nhận storefront public đang render được.</li>
+      <li>Thêm sản phẩm vào guest cart, refresh trình duyệt và kiểm tra cart local vẫn còn.</li>
+      <li>Tạo đơn từ checkout và dùng <code>/track-order</code> với mã đơn + email để tra cứu.</li>
+      <li>Đăng nhập tài khoản <code>admin</code> / <code>Admin123!</code>, vào <code>/admin</code> và đổi trạng thái một đơn hàng.</li>
+      <li>Tạo hoặc sửa một sản phẩm, gán nhiều collection nếu cần, rồi kiểm tra lại ngoài storefront.</li>
+      <li>Vào tab content/admin CMS, sửa thử một block homepage hoặc nội dung VI/EN và xác nhận public cập nhật đúng.</li>
+    </ol>
+  </div>
+
+  <h2>9. Giới hạn và quyết định còn mở</h2>
   <div class="card">
     <ul>
-      <li>Cổng thanh toán, hoàn tiền, đối soát giao dịch.</li>
-      <li>Khuyến mãi, mã giảm giá, thuế.</li>
-      <li>Tích hợp đơn vị vận chuyển và bảng phí giao hàng.</li>
-      <li>Phân quyền admin chi tiết hơn ngoài cờ admin hiện tại.</li>
-      <li>Nhật ký thao tác của admin.</li>
-      <li>HTTPS production trực tiếp bằng Nginx/Certbot hay đặt sau Cloudflare/CDN.</li>
-      <li>Chính sách ảnh production dài hạn: dùng MinIO public qua Nginx, bucket private, CDN hay signed URL.</li>
+      <li>Chưa có search UI public dù API hỗ trợ query theo từ khóa.</li>
+      <li>Chưa có merge cart/wishlist guest vào tài khoản sau khi login.</li>
+      <li>Chưa có payment gateway, refund flow, đối soát giao dịch.</li>
+      <li>Chưa có promo code, thuế, loyalty hoặc pricing rule phức tạp.</li>
+      <li>Chưa tích hợp hãng vận chuyển; timeline giao hàng hiện do admin cập nhật tay.</li>
+      <li>Newsletter form trên homepage chưa nối backend/CRM.</li>
+      <li>Phân quyền admin chi tiết, audit log và approval workflow chưa có.</li>
     </ul>
   </div>
 
@@ -156,24 +350,27 @@
   <table>
     <thead><tr><th>Mục</th><th>Đường dẫn</th><th>Ghi chú</th></tr></thead>
     <tbody>
-      <tr><td>Trang bán hàng</td><td><code>http://localhost:5173</code></td><td>Website public.</td></tr>
-      <tr><td>Trang quản trị</td><td><code>http://localhost:5173/admin</code></td><td>Tài khoản local: <code>admin</code> / <code>Admin123!</code>.</td></tr>
-      <tr><td>Tài liệu API</td><td><code>http://localhost:8000/docs</code></td><td>Swagger UI.</td></tr>
+      <tr><td>Storefront</td><td><code>http://localhost:5173</code></td><td>Website public.</td></tr>
+      <tr><td>Đăng nhập</td><td><code>http://localhost:5173/login</code></td><td>Đăng nhập bằng username <code>admin</code> hoặc email <code>admin@fashionstore.com</code>.</td></tr>
+      <tr><td>Admin</td><td><code>http://localhost:5173/admin</code></td><td>Tài khoản local: <code>admin</code> / <code>Admin123!</code>.</td></tr>
+      <tr><td>Swagger API</td><td><code>http://localhost:8000/docs</code></td><td>Tài liệu endpoint.</td></tr>
+      <tr><td>MinIO API</td><td><code>http://localhost:9000</code></td><td>Endpoint object storage public/local.</td></tr>
       <tr><td>MinIO Console</td><td><code>http://localhost:9001</code></td><td><code>minioadmin</code> / <code>minioadmin123</code>.</td></tr>
     </tbody>
   </table>
 
-  <h2>11. Production</h2>
-  <div class="card">
-    <ul>
-      <li>Production dùng <code>docker-compose.prod.yml</code> và <code>nginx</code> làm service public duy nhất.</li>
-      <li>Nginx serve frontend static, proxy <code>/api/</code> sang backend và proxy <code>/fashion-store-assets/</code> sang MinIO.</li>
-      <li>MongoDB, Redis, MinIO và backend không nên mở port trực tiếp ra internet.</li>
-      <li>File <code>.env.production.example</code> là mẫu cấu hình; trước khi deploy phải đổi domain, <code>SECRET_KEY</code>, Mongo password, MinIO password và admin password.</li>
-    </ul>
-  </div>
+  <h2>11. Tài liệu liên quan</h2>
+  <table>
+    <thead><tr><th>File</th><th>Mục đích</th></tr></thead>
+    <tbody>
+      <tr><td><code>docs/admin-handoff-guide.html</code></td><td>Hướng dẫn vận hành chi tiết cho admin CMS, catalog, MinIO, image specs.</td></tr>
+      <tr><td><code>docs/technical-handoff.html</code></td><td>Tổng quan kỹ thuật, kiến trúc triển khai và service dependencies.</td></tr>
+      <tr><td><code>docs/data-model.html</code></td><td>Mô hình dữ liệu MongoDB, content bundle, catalog và media metadata.</td></tr>
+      <tr><td><code>docs/architech.html</code></td><td>Sơ đồ và mô tả thành phần hệ thống.</td></tr>
+    </tbody>
+  </table>
 
-  <footer>Fashion Store - tài liệu bàn giao nghiệp vụ đã Việt hóa.</footer>
+  <footer>Fashion Store - BA handoff cập nhật theo tính năng đang có trên codebase storefront và admin.</footer>
 </main>
 </body>
 </html>

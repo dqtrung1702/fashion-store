@@ -13,12 +13,12 @@ import useWishlistStore from '../../store/wishlistStore';
 const navClassName = ({ isActive }) =>
   `whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold shadow-[0_10px_24px_rgba(166,99,91,0.08)] backdrop-blur transition duration-200 ${
     isActive
-      ? 'border-[#c97968] bg-[linear-gradient(135deg,#f4ddda,#f4e8c7)] text-[#8f514a] shadow-[0_14px_30px_rgba(166,99,91,0.14)]'
-      : 'border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(244,232,199,0.54))] text-slate-700 hover:-translate-y-0.5 hover:border-[#c97968] hover:bg-[linear-gradient(135deg,#ffffff,#f2d7d2)] hover:text-[#8f514a] hover:shadow-[0_14px_30px_rgba(166,99,91,0.13)]'
+      ? 'border-[#f2d7d2] bg-[linear-gradient(135deg,rgba(201,121,104,0.94),rgba(169,93,81,0.94))] text-white shadow-[0_14px_30px_rgba(20,24,22,0.26)]'
+      : 'border-white/55 bg-[linear-gradient(135deg,rgba(255,250,244,0.92),rgba(244,232,199,0.72))] text-[#31443c] hover:-translate-y-0.5 hover:border-[#f2d7d2] hover:bg-[linear-gradient(135deg,#ffffff,#f4ddda)] hover:text-[#8f514a] hover:shadow-[0_14px_30px_rgba(20,24,22,0.18)]'
   }`;
 
 const actionButtonClass =
-  'rounded-full border border-white/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(223,233,228,0.54))] px-4 py-2 text-slate-700 shadow-[0_10px_24px_rgba(166,99,91,0.08)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-[#c97968] hover:bg-[linear-gradient(135deg,#ffffff,#f4ddda)] hover:text-[#8f514a] hover:shadow-[0_14px_30px_rgba(166,99,91,0.13)]';
+  'rounded-full border border-white/55 bg-[linear-gradient(135deg,rgba(255,250,244,0.92),rgba(223,233,228,0.74))] px-4 py-2 text-[#31443c] shadow-[0_10px_24px_rgba(20,24,22,0.12)] backdrop-blur transition duration-200 hover:-translate-y-0.5 hover:border-[#f2d7d2] hover:bg-[linear-gradient(135deg,#ffffff,#f4ddda)] hover:text-[#8f514a] hover:shadow-[0_14px_30px_rgba(20,24,22,0.18)]';
 
 const VietnamFlag = () => (
   <svg viewBox="0 0 36 24" className="h-5 w-7 rounded-[3px] shadow-sm" aria-hidden="true">
@@ -104,7 +104,7 @@ export default function PublicHeader() {
 
   const languageSwitch = (
     <div
-      className="relative grid h-9 w-[84px] grid-cols-2 rounded-lg border border-[#d8b9ad] bg-[#fffaf4] p-1 shadow-[0_10px_24px_rgba(143,81,74,0.12)]"
+      className="relative grid h-9 w-[84px] grid-cols-2 rounded-lg border border-white/45 bg-[rgba(255,250,244,0.84)] p-1 shadow-[0_10px_24px_rgba(20,24,22,0.14)] backdrop-blur"
       aria-label={getUiText(locale, 'language')}
     >
       <span
@@ -135,14 +135,14 @@ export default function PublicHeader() {
 
   return (
     <div className="mx-auto max-w-[1400px] px-4 pt-6 sm:px-6 lg:px-8">
-      <div className="space-y-4">
+      <div className="space-y-4 rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(20,24,22,0.28),rgba(20,24,22,0.14))] px-4 py-5 shadow-[0_20px_56px_rgba(20,24,22,0.12)] backdrop-blur-[2px] sm:px-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
-            <Link to="/" className="block truncate font-display text-3xl leading-none text-slate-950 md:text-4xl">
+            <Link to="/" className="block truncate font-display text-3xl leading-none text-white md:text-4xl">
               {siteChrome.brandName}
             </Link>
             {siteChrome.announcement ? (
-              <p className="mt-2 max-w-3xl truncate text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              <p className="mt-2 max-w-3xl truncate text-xs font-semibold uppercase tracking-[0.22em] text-white/72">
                 {siteChrome.announcement}
               </p>
             ) : null}
@@ -150,7 +150,7 @@ export default function PublicHeader() {
 
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 text-sm font-semibold">
             {isAuthenticated && user?.is_admin ? (
-              <Link to="/admin" className="rounded-full border border-[#c97968] bg-[linear-gradient(135deg,#ffffff,#f4e8c7)] px-4 py-2 text-[#8f514a] shadow-[0_10px_24px_rgba(166,99,91,0.08)] transition duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(135deg,#f4ddda,#f4e8c7)] hover:shadow-[0_14px_30px_rgba(166,99,91,0.13)]">
+              <Link to="/admin" className="rounded-full border border-[#f2d7d2] bg-[linear-gradient(135deg,rgba(201,121,104,0.96),rgba(169,93,81,0.94))] px-4 py-2 text-white shadow-[0_10px_24px_rgba(20,24,22,0.18)] transition duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[0_14px_30px_rgba(20,24,22,0.22)]">
                 {getUiText(locale, 'admin')}
               </Link>
             ) : null}
@@ -169,7 +169,7 @@ export default function PublicHeader() {
                 {getUiText(locale, 'logout')}
               </button>
             ) : (
-              <Link to={loginHref} className="rounded-full bg-[linear-gradient(135deg,#c97968,#a95d51)] px-4 py-2 text-white shadow-[0_12px_28px_rgba(166,99,91,0.18)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(166,99,91,0.22)]">
+              <Link to={loginHref} className="rounded-full border border-[#f2d7d2] bg-[linear-gradient(135deg,#c97968,#a95d51)] px-4 py-2 text-white shadow-[0_12px_28px_rgba(20,24,22,0.2)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(20,24,22,0.24)]">
                 {getUiText(locale, 'login')}
               </Link>
             )}

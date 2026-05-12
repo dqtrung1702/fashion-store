@@ -19,8 +19,7 @@ import { adminService, contentService } from '../services';
 import { DEFAULT_LOCALE, LANGUAGE_STORAGE_KEY, SUPPORTED_LOCALES } from './languageStore';
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
-const DEFAULT_BACKGROUND_IMAGE =
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=2400&q=85';
+const DEFAULT_BACKGROUND_IMAGE = '';
 const GLOBAL_SITE_CHROME_FIELDS = ['backgroundImage'];
 
 const localizedDefaults = {
@@ -412,7 +411,7 @@ const useContentStore = create((set, get) => ({
         loading: false,
         hydrated: true,
         source: 'local',
-        error: error?.response?.data?.detail || 'Không thể tải content từ backend. Đang dùng dữ liệu local.',
+        error: error?.response?.data?.detail || 'Không thể tải content từ backend. Đang dùng fallback nội dung tạm thời.',
       });
       return { ok: false, error: error?.response?.data?.detail || 'Không thể tải content từ backend.' };
     }

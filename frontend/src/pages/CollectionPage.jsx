@@ -50,8 +50,6 @@ const matchesAvailability = (product, availability) => {
   return true;
 };
 
-const getProductImage = (product = {}) => product.coverImage || product.images?.[0] || '';
-
 export default function CollectionPage() {
   const { slug } = useParams();
   const { products, collections, loading, error } = useCatalog();
@@ -72,7 +70,7 @@ export default function CollectionPage() {
   const collectionProducts = collection
     ? products.filter((product) => matchesCollection(product, collection))
     : products;
-  const heroImage = getProductImage(collectionProducts[0]);
+  const heroImage = collection?.image || '';
 
   const sizeOptions = useMemo(
     () => [...new Set(collectionProducts.flatMap((product) => product.sizes || []))],

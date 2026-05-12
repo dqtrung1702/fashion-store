@@ -15,6 +15,24 @@ export default function useCatalog(limit = 100) {
     }
   }, [hydrated, loadCatalog]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const refreshCatalog = () => {
+      if (document.visibilityState === 'visible') {
+        loadCatalog(true);
+      }
+    };
+
+    window.addEventListener('focus', refreshCatalog);
+    document.addEventListener('visibilitychange', refreshCatalog);
+
+    return () => {
+      window.removeEventListener('focus', refreshCatalog);
+      document.removeEventListener('visibilitychange', refreshCatalog);
+    };
+  }, [loadCatalog]);
+
   const activeCollections = useMemo(
     () => collections.filter((collection) => collection.isActive !== false),
     [collections]

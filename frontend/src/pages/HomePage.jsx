@@ -4,24 +4,37 @@ import ProductCard from '../components/public/ProductCard';
 import useCatalog from '../hooks/useCatalog';
 import { localizeEntity } from '../i18n/entities';
 import { getUiText } from '../i18n/ui';
-import { getProductCollectionSlugs } from '../lib/catalog';
 import useContentStore, { contentOptionEntries } from '../store/contentStore';
 import useLanguageStore from '../store/languageStore';
 
 const sectionTitleClass = 'mt-3 max-w-4xl font-display text-4xl leading-tight text-slate-950';
+const sectionHeaderThemes = {
+  campaigns:
+    'rounded-[1.75rem] border border-[#d7dfd8]/80 bg-[linear-gradient(135deg,rgba(240,246,241,0.76),rgba(244,232,199,0.62))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+  newIn:
+    'rounded-[1.75rem] border border-[#f1d7cf]/80 bg-[linear-gradient(135deg,rgba(255,247,243,0.76),rgba(244,232,199,0.64))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+  bestsellers:
+    'rounded-[1.75rem] border border-[#ead8c8]/80 bg-[linear-gradient(135deg,rgba(250,242,231,0.76),rgba(242,215,210,0.62))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+  categories:
+    'rounded-[1.75rem] border border-[#dce7de]/80 bg-[linear-gradient(135deg,rgba(244,248,242,0.76),rgba(223,233,228,0.64))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+  occasions:
+    'rounded-[1.75rem] border border-[#eadfd8]/80 bg-[linear-gradient(135deg,rgba(252,246,242,0.76),rgba(233,223,220,0.64))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+  reviews:
+    'rounded-[1.75rem] border border-[#ead8d5]/80 bg-[linear-gradient(135deg,rgba(255,246,244,0.76),rgba(223,233,228,0.60))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+  ugc:
+    'rounded-[1.75rem] border border-[#e6ddd3]/80 bg-[linear-gradient(135deg,rgba(250,243,236,0.76),rgba(244,232,199,0.60))] px-5 py-4 shadow-[0_14px_34px_rgba(20,24,22,0.08)] backdrop-blur-sm',
+};
+const sectionCtaThemes = {
+  newIn:
+    'rounded-full border border-[#f1d7cf]/80 bg-[linear-gradient(135deg,rgba(255,247,243,0.74),rgba(244,232,199,0.66))] px-5 py-3 text-sm font-semibold text-[#5d5f46] shadow-[0_10px_22px_rgba(20,24,22,0.08)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:brightness-105',
+  bestsellers:
+    'rounded-full border border-[#ead8c8]/80 bg-[linear-gradient(135deg,rgba(250,242,231,0.74),rgba(242,215,210,0.66))] px-5 py-3 text-sm font-semibold text-[#6a5447] shadow-[0_10px_22px_rgba(20,24,22,0.08)] backdrop-blur-sm transition hover:-translate-y-0.5 hover:brightness-105',
+};
 const getExcerpt = (value = '', maxLength = 150) => {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return normalized.length > maxLength ? `${normalized.slice(0, maxLength).trim()}...` : normalized;
 };
-const getProductImage = (product = {}) => product.coverImage || product.images?.[0] || '';
 const primaryCampaignSlug = 'ao-dai-hoi-he';
-const heroImage =
-  'https://images.pexels.com/photos/36214254/pexels-photo-36214254.jpeg?auto=compress&cs=tinysrgb&w=1800&q=85';
-const editorialFallbackImages = {
-  campaigns: 'https://images.pexels.com/photos/36214254/pexels-photo-36214254.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80',
-  lookbook: 'https://images.pexels.com/photos/32279111/pexels-photo-32279111.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80',
-  occasions: 'https://images.pexels.com/photos/35146267/pexels-photo-35146267.jpeg?auto=compress&cs=tinysrgb&w=1200&q=80',
-};
 const editorialRouteBase = {
   campaigns: '/campaigns',
   lookbook: '/lookbook',
@@ -33,9 +46,11 @@ export default function HomePage() {
   const locale = useLanguageStore((state) => state.locale);
   const homePageContent = useContentStore((state) => state.homePageContent);
   const editorialPages = useContentStore((state) => state.editorialPages);
+  const siteChrome = useContentStore((state) => state.siteChrome);
   const hero = homePageContent.hero || {};
   const heroStats = homePageContent.heroStats || [];
   const campaignBanner = homePageContent.campaignBanner || {};
+  const heroImage = hero.image || siteChrome.backgroundImage || '';
   const sectionControls = homePageContent.sectionControls || {};
   const getSection = (key, fallback = {}) => ({
     ...fallback,
@@ -88,8 +103,7 @@ export default function HomePage() {
     }
     return to || fallbackCollectionTo;
   };
-  const getCollectionImage = (collection) =>
-    getProductImage(products.find((product) => getProductCollectionSlugs(product).includes(collection.slug))) || heroImage;
+  const getCollectionImage = (collection) => collection?.image || '';
   const collectionCards = categoryCards.map((collection) => {
     const localizedCollection = localizeEntity(collection, locale);
     return {
@@ -107,7 +121,7 @@ export default function HomePage() {
       return {
         ...page,
         to: `${editorialRouteBase[entry.sectionKey]}/${entry.slug}`,
-        image: page.image || editorialFallbackImages[entry.sectionKey] || heroImage,
+        image: page.image || '',
       };
     })
     .filter(Boolean);
@@ -119,7 +133,7 @@ export default function HomePage() {
         label: campaignBanner.ctaLabel || editorialPages.campaigns[primaryCampaignSlug]?.cta?.label,
       },
       to: campaignBanner.to || `/campaigns/${primaryCampaignSlug}`,
-      image: editorialCards[0]?.image || editorialFallbackImages.campaigns,
+      image: editorialCards[0]?.image || '',
   };
   const campaignCards = [
     editorialCards[0] || fallbackCampaignCard,
@@ -128,17 +142,17 @@ export default function HomePage() {
 
   return (
     <div className="space-y-10">
-      <section className="border-y border-white/70 py-4">
+      <section className="rounded-[2rem] border border-white/45 bg-[linear-gradient(135deg,rgba(244,248,242,0.54),rgba(223,233,228,0.42)_42%,rgba(244,232,199,0.34)_100%)] py-4 shadow-[0_18px_48px_rgba(20,24,22,0.10)] backdrop-blur-sm">
         <div className="grid gap-0 md:grid-cols-5">
           {homePageContent.uspItems.map((item) => (
             <div
               key={item.title}
-              className="border-white/70 px-4 py-3 md:border-l md:first:border-l-0"
+              className="border-white/28 px-4 py-3 md:border-l md:first:border-l-0"
             >
-              <span className="mb-2 block h-0.5 w-8 bg-[#c97968]" />
-              <span className="block text-sm font-bold text-slate-950">{item.title}</span>
+              <span className="mb-2 block h-0.5 w-8 bg-[#d99284]" />
+              <span className="block text-sm font-bold text-[#3f5148]">{item.title}</span>
               {item.detail ? (
-                <span className="mt-1 block font-display text-lg leading-snug text-slate-600">{item.detail}</span>
+                <span className="mt-1 block font-display text-lg leading-snug text-[#56675f]">{item.detail}</span>
               ) : null}
             </div>
           ))}
@@ -147,12 +161,16 @@ export default function HomePage() {
 
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <div
-          className="relative flex min-h-[620px] items-end overflow-hidden rounded-[2.5rem] border border-white/70 bg-cover bg-center px-7 py-10 text-white shadow-[0_40px_110px_rgba(166,99,91,0.14)] md:px-10 md:py-14"
-          style={{
-            backgroundImage: `linear-gradient(180deg, rgba(20,24,22,0.10) 0%, rgba(20,24,22,0.84) 100%), url(${heroImage})`,
-          }}
+          className={`relative flex min-h-[620px] items-end overflow-hidden rounded-[2.5rem] border border-white/70 px-7 py-10 text-white shadow-[0_40px_110px_rgba(166,99,91,0.14)] md:px-10 md:py-14 ${heroImage ? 'bg-cover bg-center' : 'bg-[linear-gradient(135deg,rgba(20,24,22,0.98),rgba(64,73,68,0.94)_50%,rgba(173,131,112,0.86))]'}`}
+          style={
+            heroImage
+              ? {
+                  backgroundImage: `linear-gradient(180deg, rgba(20,24,22,0.10) 0%, rgba(20,24,22,0.84) 100%), url(${heroImage})`,
+                }
+              : undefined
+          }
         >
-          <div className="relative max-w-3xl rounded-[1.75rem] bg-slate-950/25 p-5 backdrop-blur-sm md:p-6">
+          <div className="relative max-w-3xl rounded-[1.75rem] bg-slate-950/16 p-5 backdrop-blur-[3px] md:p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/90">
               {hero.eyebrow}
             </p>
@@ -182,7 +200,7 @@ export default function HomePage() {
               {heroStats.map((stat) => (
                 <div
                   key={`${stat.label}-${stat.value}`}
-                  className="rounded-[1.5rem] border border-white/30 bg-white/15 p-4 backdrop-blur"
+                  className="rounded-[1.5rem] border border-white/30 bg-white/10 p-4 backdrop-blur-[2px]"
                 >
                   <p className="text-sm uppercase tracking-[0.16em] text-white/80">{stat.label}</p>
                   <p className="mt-3 text-2xl font-semibold">{stat.value}</p>
@@ -197,14 +215,20 @@ export default function HomePage() {
             <Link
               key={card.to}
               to={card.to}
-              className="group relative min-h-[190px] overflow-hidden rounded-[1.9rem] border border-white/70 bg-slate-950 shadow-sm transition hover:-translate-y-1"
+            className="group relative min-h-[190px] overflow-hidden rounded-[1.9rem] border border-white/70 bg-slate-950 shadow-sm transition hover:-translate-y-1"
             >
-              <img
-                src={card.image}
-                alt={card.title}
-                className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+              {card.image ? (
+                <>
+                  <img
+                    src={card.image}
+                    alt={card.title}
+                    className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(36,42,39,0.98),rgba(83,95,87,0.96)_52%,rgba(164,120,101,0.92))]" />
+              )}
               <div className="relative flex min-h-[190px] flex-col justify-end p-6 text-white">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/80">
                   {card.eyebrow}
@@ -219,7 +243,7 @@ export default function HomePage() {
       {isSectionEnabled('campaigns') ? (
       <section className="space-y-6">
         <div className="flex items-end justify-between gap-4">
-          <div>
+          <div className={sectionHeaderThemes.campaigns}>
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
               {sections.campaigns.eyebrow}
             </p>
@@ -232,8 +256,14 @@ export default function HomePage() {
             to={campaignCards[0].to}
             className="relative flex min-h-[480px] items-end overflow-hidden rounded-[2.2rem] border border-white/70 bg-slate-950 px-8 py-10 text-white shadow-[0_35px_90px_rgba(166,99,91,0.13)]"
           >
-            <img src={campaignCards[0].image} alt={campaignCards[0].title} className="absolute inset-0 h-full w-full object-cover opacity-90" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+            {campaignCards[0].image ? (
+              <>
+                <img src={campaignCards[0].image} alt={campaignCards[0].title} className="absolute inset-0 h-full w-full object-cover opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+              </>
+            ) : (
+              <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(21,27,24,0.98),rgba(54,66,59,0.95)_48%,rgba(168,126,106,0.88))]" />
+            )}
             <div className="relative">
               <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/80">
                 {campaignCards[0].eyebrow}
@@ -252,8 +282,14 @@ export default function HomePage() {
                 to={card.to}
                 className="group relative min-h-[230px] overflow-hidden rounded-[1.75rem] border border-white/70 bg-slate-950 shadow-sm transition hover:-translate-y-1"
               >
-                <img src={card.image} alt={card.title} className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                {card.image ? (
+                  <>
+                    <img src={card.image} alt={card.title} className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(35,40,37,0.98),rgba(74,84,78,0.94)_52%,rgba(176,133,112,0.88))]" />
+                )}
                 <div className="relative flex min-h-[230px] flex-col justify-end p-6 text-white">
                   <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/80">
                     {card.eyebrow}
@@ -270,14 +306,17 @@ export default function HomePage() {
       {isSectionEnabled('newIn') ? (
       <section className="space-y-6">
         <div className="flex items-end justify-between gap-4">
-          <div>
+          <div className={sectionHeaderThemes.newIn}>
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
               {sections.newIn.eyebrow}
             </p>
             <h2 className={sectionTitleClass}>{sections.newIn.title}</h2>
           </div>
           {sections.newIn.ctaLabel && sections.newIn.ctaTo ? (
-            <Link to={sections.newIn.ctaTo} className="text-sm font-semibold text-slate-700">
+            <Link
+              to={sections.newIn.ctaTo}
+              className={sectionCtaThemes.newIn}
+            >
               {sections.newIn.ctaLabel}
             </Link>
           ) : null}
@@ -300,14 +339,17 @@ export default function HomePage() {
       {isSectionEnabled('bestsellers') ? (
       <section className="space-y-6">
         <div className="flex items-end justify-between gap-4">
-          <div>
+          <div className={sectionHeaderThemes.bestsellers}>
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
               {sections.bestsellers.eyebrow}
             </p>
             <h2 className={sectionTitleClass}>{sections.bestsellers.title}</h2>
           </div>
           {sections.bestsellers.ctaLabel && sections.bestsellers.ctaTo ? (
-            <Link to={sections.bestsellers.ctaTo} className="text-sm font-semibold text-slate-700">
+            <Link
+              to={sections.bestsellers.ctaTo}
+              className={sectionCtaThemes.bestsellers}
+            >
               {sections.bestsellers.ctaLabel}
             </Link>
           ) : null}
@@ -333,7 +375,7 @@ export default function HomePage() {
 
       {isSectionEnabled('categories') ? (
       <section className="space-y-6">
-        <div>
+        <div className={sectionHeaderThemes.categories}>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
             {sections.categories.eyebrow}
           </p>
@@ -350,8 +392,14 @@ export default function HomePage() {
               to={`/collections/${collection.slug}`}
               className="group relative min-h-[320px] overflow-hidden rounded-[1.75rem] border border-white/70 bg-slate-950 shadow-sm transition hover:-translate-y-1"
             >
-              <img src={collectionImage} alt={localizedCollection.title} className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+              {collectionImage ? (
+                <>
+                  <img src={collectionImage} alt={localizedCollection.title} className="absolute inset-0 h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(35,40,37,0.98),rgba(74,84,78,0.94)_52%,rgba(176,133,112,0.88))]" />
+              )}
               <div className="relative flex min-h-[320px] flex-col justify-end p-5 text-white">
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-white/80">
                   {getUiText(locale, 'collectionFallback')}
@@ -367,7 +415,7 @@ export default function HomePage() {
 
       {isSectionEnabled('occasions') ? (
       <section className="space-y-6">
-        <div>
+        <div className={sectionHeaderThemes.occasions}>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
             {sections.occasions.eyebrow}
           </p>
@@ -382,12 +430,18 @@ export default function HomePage() {
               className="group overflow-hidden rounded-[1.9rem] border border-white/70 bg-white/90 shadow-sm transition hover:-translate-y-1"
             >
               <div className="relative aspect-[4/5] overflow-hidden">
-                <img
-                  src={occasion.image}
-                  alt={occasion.title}
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/10 to-transparent" />
+                {occasion.image ? (
+                  <>
+                    <img
+                      src={occasion.image}
+                      alt={occasion.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/10 to-transparent" />
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(35,40,37,0.98),rgba(74,84,78,0.94)_52%,rgba(176,133,112,0.88))]" />
+                )}
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                   <h3 className="text-3xl font-semibold leading-tight">{occasion.title}</h3>
                 </div>
@@ -400,7 +454,7 @@ export default function HomePage() {
 
       {isSectionEnabled('reviews') ? (
       <section className="space-y-6">
-        <div>
+        <div className={sectionHeaderThemes.reviews}>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
             {sections.reviews.eyebrow}
           </p>
@@ -451,7 +505,7 @@ export default function HomePage() {
         {isSectionEnabled('ugc') ? (
         <div className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-sm">
           <div className="flex items-end justify-between gap-4">
-            <div>
+            <div className={sectionHeaderThemes.ugc}>
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
                 {sections.ugc.eyebrow}
               </p>

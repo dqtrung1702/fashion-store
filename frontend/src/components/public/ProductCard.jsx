@@ -17,7 +17,7 @@ export default function ProductCard({
   const labels = badgeText[locale] || badgeText.vi;
 
   return (
-    <article className="group overflow-hidden rounded-[1.5rem] border border-white/70 bg-white/90 shadow-[0_18px_45px_rgba(166,99,91,0.09)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(184,216,159,0.16)]">
+    <article className="group overflow-hidden rounded-[1.5rem] border border-white/65 bg-[linear-gradient(180deg,rgba(255,249,244,0.88),rgba(246,238,228,0.82))] shadow-[0_16px_38px_rgba(166,99,91,0.07)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_52px_rgba(184,216,159,0.14)]">
       <div className="relative">
         <Link to={`/products/${localizedProduct.id}`} className="block">
           <div className="aspect-[3/4] overflow-hidden bg-slate-100">
@@ -44,8 +44,8 @@ export default function ProductCard({
                   badge === labels.sale
                     ? 'bg-[#c97968] text-white'
                     : badge === labels.lowStock
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-white/90 text-slate-900'
+                    ? 'bg-[#f4e8c7] text-[#7b612d]'
+                    : 'bg-[rgba(255,248,240,0.82)] text-slate-900'
                 }`}
               >
                 {badge}
@@ -81,7 +81,7 @@ export default function ProductCard({
         {localizedProduct.styleTags?.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {localizedProduct.styleTags.slice(0, 2).map((tag) => (
-              <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+              <span key={tag} className="rounded-full bg-[rgba(223,233,228,0.76)] px-3 py-1 text-xs font-semibold text-[#51645a]">
                 {tag}
               </span>
             ))}

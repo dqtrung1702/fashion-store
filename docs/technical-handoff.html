@@ -79,6 +79,39 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
     </ul>
   </div>
 
+  <h2>2.2. Dữ liệu runtime, backup và snapshot Git</h2>
+  <div class="grid">
+    <section class="card">
+      <h3>Sở hữu dữ liệu runtime</h3>
+      <ul>
+        <li>MongoDB lưu users, products, collections, site content, orders, authenticated carts và authenticated wishlists.</li>
+        <li>MinIO lưu ảnh sản phẩm public, hiện dùng bucket mặc định <code>fashion-store-assets</code>.</li>
+        <li>Redis chỉ cache public catalog/content; không phải nguồn dữ liệu gốc.</li>
+        <li><code>localStorage</code> vẫn được dùng cho auth cache, guest cart và guest wishlist.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Xuất snapshot để commit lên Git</h3>
+      <p>Không commit Docker volumes trực tiếp. Xuất chúng ra file thường trước:</p>
+      <pre>./scripts/export_runtime_data.sh
+
+git add data-snapshots/current
+git commit -m "Add runtime data snapshot"
+git push</pre>
+      <p>Có thể dùng thư mục theo ngày:</p>
+      <pre>./scripts/export_runtime_data.sh "data-snapshots/$(date +%F)"</pre>
+    </section>
+  </div>
+  <div class="card">
+    <h3>Backup production</h3>
+    <p>MongoDB có thể archive từ container production:</p>
+    <pre>mkdir -p backups
+docker compose --env-file .env.production -f docker-compose.prod.yml exec mongodb \
+  sh -c 'mongodump --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --archive=/tmp/fashion-store.gz --gzip'
+docker compose --env-file .env.production -f docker-compose.prod.yml cp mongodb:/tmp/fashion-store.gz ./backups/fashion-store-$(date +%F).gz</pre>
+    <p>MinIO production hiện nằm trong Docker volume <code>minio_data</code>; muốn backup đúng thì dùng volume backup, object replication hoặc chuyển media sang S3/R2/CDN-managed storage.</p>
+  </div>
+
   <h2>3. Module dịch vụ API</h2>
   <table>
     <thead><tr><th>File</th><th>Trách nhiệm</th></tr></thead>
@@ -112,6 +145,31 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
       <tr><td><code>src/pages/AdminPage.jsx</code></td><td>Marketing monitor, quản trị sản phẩm, danh mục, Excel import/export, nội dung homepage/landing, kho ảnh và đơn hàng.</td></tr>
     </tbody>
   </table>
+  <div class="grid">
+    <section class="card">
+      <h3>Review cookbook: điểm vào nhanh</h3>
+      <ul>
+        <li>Routing: <code>frontend/src/App.jsx</code>, <code>frontend/src/routes/publicRoutes.js</code>, <code>frontend/src/routes/pageRegistry.js</code>, <code>frontend/src/routes/AdminRoute.jsx</code>.</li>
+        <li>Admin UI shell: <code>frontend/src/pages/AdminPage.jsx</code>.</li>
+        <li>Admin helper/transform: <code>frontend/src/features/admin/constants.js</code>, <code>transformers.js</code>, <code>components.jsx</code>, <code>viewUtils.js</code>.</li>
+        <li>Catalog state: <code>frontend/src/store/catalogStore.js</code>, <code>frontend/src/lib/catalog.js</code>, <code>frontend/src/lib/text.js</code>.</li>
+        <li>Content state: <code>frontend/src/store/contentStore.js</code>.</li>
+        <li>Backend entry: <code>backend/main.py</code>, <code>backend/routes/*</code>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Review cookbook: theo loại thay đổi</h3>
+      <ul>
+        <li>Nếu sửa route hoặc thêm page mới, bắt đầu ở <code>App.jsx</code> và thư mục <code>frontend/src/routes/</code>.</li>
+        <li>Nếu sửa admin form/import/export, mở <code>frontend/src/features/admin/transformers.js</code> trước, chỉ quay lại <code>AdminPage.jsx</code> khi cần xem wiring UI.</li>
+        <li>Nếu sửa UI field/button dùng lại nhiều nơi trong admin, đọc <code>frontend/src/features/admin/components.jsx</code>.</li>
+        <li>Nếu review lỗi parse slug/list/structured text, đọc <code>frontend/src/lib/text.js</code> trước rồi mới tới store hoặc admin transformer.</li>
+        <li>Nếu sửa catalog CRUD, tập trung vào <code>frontend/src/store/catalogStore.js</code> và <code>frontend/src/lib/catalog.js</code>.</li>
+        <li>Nếu sửa content localization hoặc sync backend, đọc <code>frontend/src/store/contentStore.js</code>.</li>
+      </ul>
+    </section>
+  </div>
+  <div class="note">Hotspots hiện tại: <code>frontend/src/pages/AdminPage.jsx</code> vẫn là file lớn nhất; <code>frontend/src/store/catalogStore.js</code>, <code>frontend/src/store/contentStore.js</code> và <code>backend/routes/admin.py</code> vẫn là các điểm nên mở sớm khi review.</div>
 
   <h2>5. Hành vi admin hiện tại</h2>
   <div class="card">
@@ -124,6 +182,8 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
       <li>Một sản phẩm có thể thuộc nhiều danh mục qua <code>collectionSlugs</code>. Backend vẫn giữ <code>collectionSlug</code>/<code>category</code> làm trường chính để tương thích, nhưng lọc public kiểm tra cả danh sách nhiều danh mục.</li>
       <li>Admin có template Excel, import hàng loạt sản phẩm, export sản phẩm hiện tại ra Excel và bỏ qua ảnh. Ảnh có thể bổ sung sau qua kho MinIO/admin form.</li>
       <li>Font public dùng cặp local <code>UVNMuaThu.ttf</code> + <code>Nunito</code> qua <code>@font-face</code> trong <code>frontend/src/index.css</code>: <code>UVN Mua Thu</code> cho logo, <code>.font-display</code>, hero title, campaign title và section title; <code>Nunito</code> cho body, menu, button, form và admin. Các file được lưu trong <code>frontend/public/fonts</code> để không phụ thuộc dịch vụ font bên ngoài lúc runtime.</li>
+      <li>Bộ font active hiện gồm <code>UVNMuaThu.ttf</code>, <code>Nunito-400.ttf</code>, <code>Nunito-500.ttf</code>, <code>Nunito-600.ttf</code>, <code>Nunito-700.ttf</code>. Các font local cũ như <code>Lora</code>, <code>VLSelfie-Regular.otf</code>, <code>NVNAzkia.ttf</code> và <code>1FTVBillionDreams.ttf</code> chỉ được giữ lại làm phương án cũ, không còn được stylesheet active tham chiếu.</li>
+      <li>Nguồn font hiện hành: Nunito được lấy từ Google Fonts; <code>VLSelfie-Regular.otf</code> từng lấy từ Font2s với ghi chú <code>Free for Personal Use</code>, nên phải giữ ở trạng thái inactive trừ khi xác minh lại license cho production.</li>
       <li>Typography scale đã được hạ bớt sau khi đổi display font: hero/page title dùng mức nhỏ hơn, card title giảm từ các mức quá lớn, và <code>text-wrap: balance</code> được áp cho heading để hạn chế dòng cuối chỉ còn 2-3 chữ. Màu chữ trong <code>frontend/src/index.css</code> được remap sang tông xanh lá trầm + accent coral/rose để ăn với nền pastel hiện tại.</li>
       <li>Thông số upload ảnh chi tiết đã được nhúng trực tiếp trong <code>docs/admin-handoff-guide.html</code>, gồm tỉ lệ, kích thước khuyến nghị, kích thước tối thiểu và lưu ý crop cho từng khung hero/product/campaign/UGC.</li>
       <li>Hướng dẫn vận hành chi tiết trang <code>/admin</code> nằm ở <code>docs/admin-handoff-guide.html</code>, bao gồm quyền truy cập, từng tab, format nhập liệu, API, dữ liệu bị ảnh hưởng và lỗi thường gặp.</li>
@@ -157,6 +217,26 @@ docker compose --env-file .env.production -f docker-compose.prod.yml up -d --bui
 cd frontend && npm run build
 docker compose --env-file .env.production.example -f docker-compose.prod.yml config
 docker compose --env-file .env.production.example -f docker-compose.prod.yml run --rm --no-deps nginx nginx -t</pre>
+  <div class="grid">
+    <section class="card">
+      <h3>Troubleshooting local Docker</h3>
+      <ul>
+        <li>Dừng stack local: <code>docker compose down</code>. Nếu cần xóa luôn volumes: <code>docker compose down -v</code>.</li>
+        <li>Khi service lỗi khởi động, reset và build lại: <code>docker compose down -v</code>, <code>docker compose build --no-cache</code>, <code>docker compose up -d</code>.</li>
+        <li>Xem log nhanh: <code>docker compose logs -f backend</code>, <code>frontend</code>, <code>mongodb</code>, <code>minio</code>, <code>redis</code>.</li>
+        <li>Nếu port <code>5173</code>, <code>8000</code>, <code>9000</code> hoặc <code>9001</code> bị chiếm, dừng service khác hoặc đổi mapping trong <code>docker-compose.yml</code>.</li>
+      </ul>
+    </section>
+    <section class="card">
+      <h3>Cookbook vận hành nhanh</h3>
+      <ul>
+        <li>Frontend local dùng production build preview; khi sửa source frontend bằng Docker compose cần rebuild hoặc restart frontend container.</li>
+        <li>Upload ảnh sản phẩm có thể test ngoài UI bằng <code>POST /api/admin/uploads/products</code> với multipart file và bearer token admin.</li>
+        <li>Redis chỉ là cache mềm; nếu Redis hỏng, ứng dụng vẫn phải phục vụ bằng MongoDB và tự bỏ qua cache qua <code>redis_client.py</code>.</li>
+        <li>Tài liệu cập nhật nhất để handoff kỹ thuật toàn hệ thống là file HTML này, cộng với <code>docs/data-model.html</code> và <code>docs/architech.html</code>.</li>
+      </ul>
+    </section>
+  </div>
 
   <h2>8. Khoảng trống kỹ thuật</h2>
   <div class="note risk">

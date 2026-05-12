@@ -1,6 +1,3 @@
-const pexelsImage = (id, width = 900) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${width}&q=80`;
-
 export const navigationGroups = {
   shop: [
     { label: 'New In', to: '/new-in' },
@@ -219,19 +216,19 @@ export const homePageContent = {
       title: 'Tet & spring fairs',
       description: 'Bright red, yellow and blue styles for shared festive moments.',
       to: '/occasions/tet-hoi-xuan',
-      image: pexelsImage(36214254),
+      image: '',
     },
     {
       title: 'Group uniforms',
       description: 'Easy size planning for offices, associations, clubs and reception teams.',
       to: '/lookbook/dong-phuc-tap-the',
-      image: pexelsImage(32279111),
+      image: '',
     },
     {
       title: 'School & class photos',
       description: 'White, pastel and performance colors for school ceremonies and photos.',
       to: '/collections/truong-lop-su-kien',
-      image: pexelsImage(31829686),
+      image: '',
     },
   ],
   reviews: [
@@ -265,25 +262,25 @@ export const homePageContent = {
       platform: 'Instagram',
       handle: '@minhthu.studio',
       caption: 'Coordinated white ao dai for a city shoot, light and easy to wear.',
-      image: pexelsImage(32279111),
+      image: '',
     },
     {
       platform: 'TikTok',
       handle: '@dailywithlan',
       caption: 'Trying blush pink ao dai for a performance group. The color is bright on stage.',
-      image: pexelsImage(30480186),
+      image: '',
     },
     {
       platform: 'Instagram',
       handle: '@trangwears',
       caption: 'Red ao dai for Tet and spring fairs, cheerful without feeling too formal.',
-      image: pexelsImage(36214254),
+      image: '',
     },
     {
       platform: 'TikTok',
       handle: '@an.edit',
       caption: 'Mint ao dai for a club team, young and easy to move in.',
-      image: pexelsImage(31309811),
+      image: '',
     },
   ],
 };

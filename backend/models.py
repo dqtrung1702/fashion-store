@@ -96,6 +96,7 @@ class CatalogCollectionBase(BaseModel):
     slug: str = Field(..., min_length=2, max_length=120)
     title: str = Field(..., min_length=1, max_length=160)
     description: str = Field(..., min_length=10)
+    image: str = ""
     featuredKeywords: List[str] = []
     seoHeading: str = ""
     seoBody: str = ""
@@ -112,6 +113,7 @@ class CatalogCollectionUpdate(BaseModel):
     slug: Optional[str] = Field(default=None, min_length=2, max_length=120)
     title: Optional[str] = Field(default=None, min_length=1, max_length=160)
     description: Optional[str] = Field(default=None, min_length=10)
+    image: Optional[str] = None
     featuredKeywords: Optional[List[str]] = None
     seoHeading: Optional[str] = None
     seoBody: Optional[str] = None

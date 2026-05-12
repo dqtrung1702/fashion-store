@@ -1,6 +1,3 @@
-const pexelsImage = (id, width = 900) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${width}&q=80`;
-
 export const navigationGroups = {
   shop: [
     { label: 'Mới về', to: '/new-in' },
@@ -219,19 +216,19 @@ export const homePageContent = {
       title: 'Tết & hội xuân',
       description: 'Màu đỏ, vàng, xanh sáng cho ngày vui chung, văn nghệ và ảnh gia đình.',
       to: '/occasions/tet-hoi-xuan',
-      image: pexelsImage(36214254),
+      image: '',
     },
     {
       title: 'Đồng phục tập thể',
       description: 'Mẫu dễ chia size cho cơ quan, đoàn hội, câu lạc bộ và đội lễ tân.',
       to: '/lookbook/dong-phuc-tap-the',
-      image: pexelsImage(32279111),
+      image: '',
     },
     {
       title: 'Trường lớp & kỷ yếu',
       description: 'Áo dài trắng, pastel và màu sân khấu cho khai giảng, 20/11, văn nghệ.',
       to: '/collections/truong-lop-su-kien',
-      image: pexelsImage(31829686),
+      image: '',
     },
   ],
   reviews: [
@@ -265,25 +262,25 @@ export const homePageContent = {
       platform: 'Instagram',
       handle: '@minhthu.studio',
       caption: 'Áo dài trắng đồng bộ cho buổi chụp ngoài phố, nhẹ và rất dễ mặc.',
-      image: pexelsImage(32279111),
+      image: '',
     },
     {
       platform: 'TikTok',
       handle: '@dailywithlan',
       caption: 'Thử áo dài hồng phấn cho nhóm văn nghệ, màu lên sân khấu rất sáng.',
-      image: pexelsImage(30480186),
+      image: '',
     },
     {
       platform: 'Instagram',
       handle: '@trangwears',
       caption: 'Áo dài đỏ cho Tết và hội xuân, đủ nổi bật mà không quá cầu kỳ.',
-      image: pexelsImage(36214254),
+      image: '',
     },
     {
       platform: 'TikTok',
       handle: '@an.edit',
       caption: 'Mẫu mint đồng bộ cho câu lạc bộ, nhìn trẻ và dễ di chuyển.',
-      image: pexelsImage(31309811),
+      image: '',
     },
   ],
 };

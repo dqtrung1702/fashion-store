@@ -1,10 +1,7 @@
 import { badgeText } from '../i18n/ui';
+import { uniqueList } from './text';
 
 export const getProductId = (product) => product?.id || product?._id || '';
-
-const uniqueList = (items = []) => [
-  ...new Set(items.map((item) => item?.toString().trim()).filter(Boolean)),
-];
 
 export const getProductCollectionSlugs = (product) =>
   uniqueList([

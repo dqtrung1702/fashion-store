@@ -87,14 +87,17 @@ export default function InfoPage({ pageKey }) {
     }
   };
 
+  const softPanelClass = 'rounded-[1.75rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,249,244,0.80),rgba(223,233,228,0.62))] p-6 shadow-sm backdrop-blur-sm';
+  const softPanelCompactClass = 'rounded-[1.5rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,249,244,0.80),rgba(242,215,210,0.58))] p-6 shadow-sm backdrop-blur-sm';
+
   return (
     <div className="space-y-8">
-      <PageHero eyebrow={page.eyebrow} title={page.title} description={page.intro} />
+      <PageHero eyebrow={page.eyebrow} title={page.title} description={page.intro} image={page.image || ''} />
 
       {page.sections ? (
         <div className="grid gap-6 lg:grid-cols-3">
           {page.sections.map((section) => (
-            <article key={section.title} className="rounded-[1.75rem] bg-white/85 p-6 shadow-sm">
+            <article key={section.title} className={softPanelClass}>
               <h2 className="text-2xl font-semibold text-slate-950">{section.title}</h2>
               <p className="mt-4 leading-7 text-slate-600">{section.body}</p>
             </article>
@@ -103,7 +106,7 @@ export default function InfoPage({ pageKey }) {
       ) : null}
 
       {page.table ? (
-        <div className="overflow-hidden rounded-[1.75rem] bg-white/85 shadow-sm">
+        <div className="overflow-hidden rounded-[1.75rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,249,244,0.80),rgba(223,233,228,0.62))] shadow-sm backdrop-blur-sm">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-950 text-left text-sm text-white">
               <tr>
@@ -132,7 +135,7 @@ export default function InfoPage({ pageKey }) {
       {page.faqs ? (
         <div className="space-y-4">
           {page.faqs.map((faq) => (
-            <div key={faq.question} className="rounded-[1.5rem] bg-white/85 p-6 shadow-sm">
+            <div key={faq.question} className={softPanelCompactClass}>
               <h2 className="text-xl font-semibold text-slate-950">{faq.question}</h2>
               <p className="mt-3 leading-7 text-slate-600">{faq.answer}</p>
             </div>
@@ -143,7 +146,7 @@ export default function InfoPage({ pageKey }) {
       {page.cards ? (
         <div className="grid gap-6 md:grid-cols-3">
           {page.cards.map((card) => (
-            <article key={card.title} className="rounded-[1.5rem] bg-white/85 p-6 shadow-sm">
+            <article key={card.title} className={softPanelCompactClass}>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">{card.title}</p>
               <h2 className="mt-4 text-2xl font-semibold text-slate-950">{card.detail}</h2>
               <p className="mt-2 text-sm text-slate-600">{card.note}</p>
@@ -153,7 +156,7 @@ export default function InfoPage({ pageKey }) {
       ) : null}
 
       {storeLocation && mapEmbedUrl ? (
-        <section className="grid gap-6 overflow-hidden rounded-[1.75rem] bg-white/85 p-5 shadow-sm lg:grid-cols-[0.85fr_1.15fr]">
+        <section className="grid gap-6 overflow-hidden rounded-[1.75rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,249,244,0.80),rgba(223,233,228,0.62))] p-5 shadow-sm backdrop-blur-sm lg:grid-cols-[0.85fr_1.15fr]">
           <div className="p-2">
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">Bản đồ cửa hàng</p>
             <h2 className="mt-4 text-3xl font-semibold text-slate-950">
@@ -192,7 +195,7 @@ export default function InfoPage({ pageKey }) {
       {page.steps ? (
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <form
-            className="rounded-[1.75rem] bg-white/85 p-6 shadow-sm"
+            className="rounded-[1.75rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,249,244,0.78),rgba(223,233,228,0.54))] p-6 shadow-sm backdrop-blur-sm"
             onSubmit={(event) => {
               event.preventDefault();
               handleTrackOrder();
@@ -222,7 +225,7 @@ export default function InfoPage({ pageKey }) {
             </div>
           </form>
 
-          <div className="rounded-[1.75rem] border border-white/70 bg-[linear-gradient(145deg,#dfe9e4,#e9dfdc_48%,#f4e8c7)] p-6 text-slate-950 shadow-[0_25px_70px_rgba(166,99,91,0.12)]">
+          <div className="rounded-[1.75rem] border border-white/65 bg-[linear-gradient(145deg,rgba(223,233,228,0.78),rgba(233,223,220,0.66)_48%,rgba(244,232,199,0.58))] p-6 text-slate-950 shadow-[0_22px_58px_rgba(166,99,91,0.10)] backdrop-blur-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-600">Xem trước</p>
             {placedMessage ? (
               <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-emerald-700">
@@ -235,14 +238,14 @@ export default function InfoPage({ pageKey }) {
               </div>
             ) : null}
             {trackedOrder ? (
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-4">
+                <div className="mt-6 space-y-4">
+                  <div className="rounded-2xl border border-white/70 bg-white/70 px-4 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">Đã tìm thấy đơn</p>
                   <h3 className="mt-3 text-2xl font-semibold">{trackedOrder.orderNumber}</h3>
                   <p className="mt-2 text-sm text-slate-600">Tổng cộng {formatCurrency(trackedOrder.total_amount)}</p>
                 </div>
                 {(trackedOrder.trackingSteps || []).map((step, index) => (
-                  <div key={step.label} className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/60 px-4 py-4">
+                  <div key={step.label} className="flex items-center gap-4 rounded-2xl border border-white/65 bg-white/52 px-4 py-4">
                     <div className={`flex h-10 w-10 items-center justify-center rounded-full ${step.active ? 'bg-slate-950 text-white' : 'bg-white text-slate-500'}`}>
                       {index + 1}
                     </div>
@@ -256,7 +259,7 @@ export default function InfoPage({ pageKey }) {
             ) : (
               <div className="mt-6 space-y-4">
                 {page.steps.map((step, index) => (
-                  <div key={step} className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
+                  <div key={step} className="flex items-center gap-4 rounded-2xl border border-white/20 bg-white/16 px-4 py-4">
                     <div className={`flex h-10 w-10 items-center justify-center rounded-full ${trackingValues.orderNumber.trim() || index === 0 ? 'bg-slate-950 text-white' : 'bg-white text-slate-500'}`}>
                       {index + 1}
                     </div>

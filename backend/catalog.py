@@ -115,6 +115,7 @@ def serialize_collection(collection_doc: Dict[str, Any]) -> Dict[str, Any]:
         "slug": doc.get("slug") or "",
         "title": doc.get("title") or "",
         "description": doc.get("description") or "",
+        "image": doc.get("image") or "",
         "featuredKeywords": doc.get("featuredKeywords") or [],
         "seoHeading": doc.get("seoHeading") or "",
         "seoBody": doc.get("seoBody") or "",

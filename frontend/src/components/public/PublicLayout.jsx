@@ -39,6 +39,24 @@ export default function PublicLayout() {
   }, [contentHydrated, loadContent, location.pathname, location.search]);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || location.pathname.startsWith('/admin')) return undefined;
+
+    const refreshContent = () => {
+      if (document.visibilityState === 'visible') {
+        loadContent(true);
+      }
+    };
+
+    window.addEventListener('focus', refreshContent);
+    document.addEventListener('visibilitychange', refreshContent);
+
+    return () => {
+      window.removeEventListener('focus', refreshContent);
+      document.removeEventListener('visibilitychange', refreshContent);
+    };
+  }, [loadContent, location.pathname]);
+
+  useEffect(() => {
     loadCart();
   }, [loadCart, token]);
 

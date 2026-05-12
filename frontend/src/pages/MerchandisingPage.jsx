@@ -20,8 +20,6 @@ const sortStrategies = {
       .sort((a, b) => a.price - b.price),
 };
 
-const getProductImage = (product = {}) => product.coverImage || product.images?.[0] || '';
-
 export default function MerchandisingPage({ pageKey }) {
   const { products, loading, error } = useCatalog();
   const locale = useLanguageStore((state) => state.locale);
@@ -35,13 +33,13 @@ export default function MerchandisingPage({ pageKey }) {
         eyebrow={page.eyebrow}
         title={page.title}
         description={page.description}
-        image={getProductImage(sortedProducts[0])}
+        image={page?.image || ''}
       />
 
       {error ? <div className="rounded-3xl border border-red-200 bg-red-50 px-6 py-5 text-red-700">{error}</div> : null}
 
       {loading ? (
-        <div className="rounded-3xl bg-white/80 px-6 py-16 text-center text-slate-600 shadow-sm">
+        <div className="rounded-3xl border border-white/65 bg-[linear-gradient(135deg,rgba(252,246,242,0.78),rgba(233,223,220,0.68))] px-6 py-16 text-center text-slate-600 shadow-sm backdrop-blur-sm">
           {getUiText(locale, 'loadingProducts')}
         </div>
       ) : sortedProducts.length > 0 ? (
@@ -55,7 +53,7 @@ export default function MerchandisingPage({ pageKey }) {
           ))}
         </div>
       ) : (
-        <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white/70 px-8 py-16 text-center text-slate-600">
+        <div className="rounded-[2rem] border border-dashed border-[#d8c8bc] bg-[linear-gradient(135deg,rgba(255,249,244,0.78),rgba(242,215,210,0.60))] px-8 py-16 text-center text-slate-600 backdrop-blur-sm">
           {getUiText(locale, 'noMatchingProducts')}
         </div>
       )}

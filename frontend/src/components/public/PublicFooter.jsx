@@ -30,7 +30,7 @@ export default function PublicFooter() {
   ];
 
   return (
-    <footer className="mt-20 border-t border-slate-200/80 bg-white/70">
+    <footer className="mt-20 border-t border-white/35 bg-[linear-gradient(135deg,rgba(242,215,210,0.36),rgba(223,233,228,0.42)_42%,rgba(244,232,199,0.30))] backdrop-blur-sm">
       <div className="mx-auto grid max-w-[1400px] gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.3fr_1fr_1fr_1fr] lg:px-8">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">{siteChrome.brandName}</p>
